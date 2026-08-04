@@ -4,6 +4,21 @@
 
 Qt 같은 외부 GUI 프레임워크 없이 Windows SDK와 MSVC만 사용합니다. 수식 계산은 직접 만든 Tokenizer와 재귀 하강 Parser가 담당하며, GUI와 계산 엔진을 분리해 테스트와 기능 확장이 가능하도록 구성했습니다.
 
+## Application Preview
+
+<p align="center">
+  <img src="../pic/c%2B%2B계산기.png" alt="C++ Win32 scientific calculator" width="760">
+</p>
+
+이 화면은 Win32 API로 직접 구성한 C++ 계산기입니다.
+
+- 상단에서 현재 각도 모드와 표시 형식을 확인할 수 있습니다.
+- 중앙 계산 영역에서 수식과 결과를 표시합니다.
+- 숫자·연산자·공학 함수 버튼으로 수식을 입력할 수 있습니다.
+- `CALC / STAT / EQN / CMPLX` 모드를 전환할 수 있습니다.
+- 계산 기록을 통해 이전 수식을 다시 불러올 수 있습니다.
+- Python PySide6 버전과 동일한 계산 규칙과 주요 기능을 공유합니다.
+
 ## Current Status
 
 ```text
