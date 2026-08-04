@@ -1,1 +1,10 @@
-PLACEHOLDER
+#include "parts/Win32_00.inc"
+#include "parts/Win32_01.inc"
+#include "parts/Win32_02.inc"
+#include "parts/Win32_03.inc"
+#include "parts/Win32_04.inc"
+#include "parts/Win32_05.inc"
+#include "parts/Win32_06.inc"
+#include "parts/Win32_07.inc"
+#include "parts/Win32_08.inc"
+#include "parts/Win32_09.inc"
