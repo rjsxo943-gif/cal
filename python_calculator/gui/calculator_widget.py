@@ -24,6 +24,8 @@ class CalculatorWidget(QWidget):
     calculate_requested = Signal(str)
     history_toggle_requested = Signal()
     angle_mode_requested = Signal()
+    display_mode_requested = Signal()
+    fraction_toggle_requested = Signal()
 
     MODE_NAMES = {
         0: "CALC",
@@ -32,11 +34,29 @@ class CalculatorWidget(QWidget):
         3: "CMPLX",
     }
 
+    SHIFT_INSERT_TEXT = {
+        "sin": "asin(",
+        "cos": "acos(",
+        "tan": "atan(",
+        "log": "10^(",
+        "ln": "e^(",
+        "Ran#": "randint(",
+    }
+
+    SHIFT_BUTTON_LABELS = {
+        "sin": "asin",
+        "cos": "acos",
+        "tan": "atan",
+        "log": "10ˣ",
+        "ln": "eˣ",
+        "Ran#": "RanInt",
+    }
+
     def __init__(self) -> None:
         super().__init__()
 
-        # SHIFT는 보조 기능을 한 번 사용할 때까지 유지한다.
         self.shift_active = False
+        self.calculate_buttons: dict[str, QPushButton] = {}
 
         self._build_ui()
         self._connect_signals()
@@ -51,7 +71,6 @@ class CalculatorWidget(QWidget):
         self.display_panel = DisplayPanel()
         self.control_panel = ControlPanel()
 
-        # 각 계산 모드는 별도 페이지로 유지한다.
         self.mode_stack = QStackedWidget()
         self.mode_stack.addWidget(self._create_calculate_page())
         self.mode_stack.addWidget(self._create_placeholder_page("Statistics Mode"))
@@ -71,6 +90,10 @@ class CalculatorWidget(QWidget):
         control.shift_requested.connect(self._toggle_shift)
         control.mode_requested.connect(self._show_mode_menu)
         control.angle_mode_requested.connect(self.angle_mode_requested.emit)
+        control.display_mode_requested.connect(self.display_mode_requested.emit)
+        control.fraction_toggle_requested.connect(
+            self.fraction_toggle_requested.emit
+        )
         control.cursor_left_requested.connect(
             lambda: self.display_panel.move_cursor(-1)
         )
@@ -85,7 +108,6 @@ class CalculatorWidget(QWidget):
             self.history_toggle_requested.emit
         )
 
-        # 위/아래 기록 탐색은 기록 모델 확장 단계에서 연결한다.
         control.history_up_requested.connect(lambda: None)
         control.history_down_requested.connect(lambda: None)
 
@@ -99,8 +121,6 @@ class CalculatorWidget(QWidget):
         layout = QGridLayout(page)
         layout.setSpacing(7)
 
-        # 두 인자 함수는 quot(10,3), root(3,8)처럼 쉼표로 구분한다.
-        # Ran#은 인자가 없으므로 완성된 random() 문자열을 삽입한다.
         buttons: list[tuple[str, str | None]] = [
             ("sin", "sin("),
             ("cos", "cos("),
@@ -155,11 +175,11 @@ class CalculatorWidget(QWidget):
             if label == "=":
                 button.setObjectName("equalsButton")
                 button.clicked.connect(self._request_calculation)
-
-                # 마지막 행에서 '=' 버튼이 두 칸을 사용한다.
                 layout.addWidget(button, row, column, 1, 2)
                 continue
 
+            self.calculate_buttons[label] = button
+            button.setProperty("shifted", False)
             button.clicked.connect(
                 self._make_insert_handler(label, inserted_text or "")
             )
@@ -175,14 +195,7 @@ class CalculatorWidget(QWidget):
         """각 입력 버튼이 눌렸을 때 실행할 함수를 만들어 반환한다."""
 
         def handler() -> None:
-            shift_text = {
-                "sin": "asin(",
-                "cos": "acos(",
-                "tan": "atan(",
-                "log": "10^(",
-                "ln": "e^(",
-                "Ran#": "randint(",
-            }.get(button_label)
+            shift_text = self.SHIFT_INSERT_TEXT.get(button_label)
 
             if self.shift_active and shift_text is not None:
                 self.display_panel.insert_text(shift_text)
@@ -243,10 +256,20 @@ class CalculatorWidget(QWidget):
         self._set_shift_active(not self.shift_active)
 
     def _set_shift_active(self, active: bool) -> None:
-        """SHIFT 내부 상태와 두 표시 영역을 동시에 갱신한다."""
+        """SHIFT 상태와 보조 기능 버튼 표시를 함께 갱신한다."""
         self.shift_active = active
         self.display_panel.set_shift_active(active)
         self.control_panel.set_shift_active(active)
+        self._update_shift_button_labels()
+
+    def _update_shift_button_labels(self) -> None:
+        """SHIFT 상태에 따라 실제 입력될 기능명을 버튼에 표시한다."""
+        for normal_label, shifted_label in self.SHIFT_BUTTON_LABELS.items():
+            button = self.calculate_buttons[normal_label]
+            button.setText(shifted_label if self.shift_active else normal_label)
+            button.setProperty("shifted", self.shift_active)
+            button.style().unpolish(button)
+            button.style().polish(button)
 
     def _request_calculation(self) -> None:
         """현재 수식을 계산 요청 Signal로 전달한다."""
@@ -271,4 +294,9 @@ class CalculatorWidget(QWidget):
     def set_angle_mode(self, angle_mode_name: str) -> None:
         """Controller의 각도 모드 상태를 디스플레이에 반영한다."""
         self.display_panel.set_angle_mode(angle_mode_name)
+        self.display_panel.expression_edit.setFocus()
+
+    def set_display_mode(self, display_mode_name: str) -> None:
+        """Controller의 결과 표시 모드를 디스플레이에 반영한다."""
+        self.display_panel.set_display_mode(display_mode_name)
         self.display_panel.expression_edit.setFocus()
