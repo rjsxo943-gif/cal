@@ -5,6 +5,10 @@ from PySide6.QtWidgets import QMainWindow, QSplitter
 
 from core.calculator_controller import CalculatorController
 from core.equation_controller import EquationController, EquationDisplayResult
+from core.statistics_controller import (
+    StatisticsController,
+    StatisticsDisplayResult,
+)
 from gui.calculator_widget import CalculatorWidget
 from gui.history_panel import HistoryPanel
 
@@ -16,12 +20,11 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.calculator_controller = CalculatorController()
+        shared_state = self.calculator_controller.state
 
-        # EquationController도 같은 CalculatorState를 공유하므로
-        # FMT 변경이 일반 계산과 방정식 결과에 동일하게 적용된다.
-        self.equation_controller = EquationController(
-            self.calculator_controller.state
-        )
+        # 세 모드는 같은 표시 상태를 공유하므로 FMT 변경이 동시에 적용된다.
+        self.statistics_controller = StatisticsController(shared_state)
+        self.equation_controller = EquationController(shared_state)
 
         self.setWindowTitle("Scientific Calculator")
         self.resize(1050, 720)
@@ -32,53 +35,51 @@ class MainWindow(QMainWindow):
         self._synchronize_state_display()
 
     def _build_ui(self) -> None:
-        """왼쪽 계산기와 오른쪽 기록 패널을 배치한다."""
         self.calculator_widget = CalculatorWidget()
         self.history_panel = HistoryPanel()
 
         self.main_splitter = QSplitter(Qt.Orientation.Horizontal)
         self.main_splitter.addWidget(self.calculator_widget)
         self.main_splitter.addWidget(self.history_panel)
-
         self.main_splitter.setStretchFactor(0, 4)
         self.main_splitter.setStretchFactor(1, 1)
         self.main_splitter.setCollapsible(0, False)
         self.main_splitter.setSizes([800, 250])
-
         self.setCentralWidget(self.main_splitter)
 
     def _connect_signals(self) -> None:
-        """하위 위젯의 요청을 창 수준 동작과 연결한다."""
-        self.calculator_widget.history_toggle_requested.connect(
-            self._toggle_history_panel
+        widget = self.calculator_widget
+
+        widget.history_toggle_requested.connect(self._toggle_history_panel)
+        widget.calculate_requested.connect(self._handle_calculate_request)
+        widget.statistics_add_requested.connect(
+            self._handle_statistics_add_request
         )
-        self.calculator_widget.calculate_requested.connect(
-            self._handle_calculate_request
+        widget.statistics_remove_requested.connect(
+            self._handle_statistics_remove_request
         )
-        self.calculator_widget.quadratic_solve_requested.connect(
+        widget.statistics_clear_requested.connect(
+            self._handle_statistics_clear_request
+        )
+        widget.quadratic_solve_requested.connect(
             self._handle_quadratic_solve_request
         )
-        self.calculator_widget.angle_mode_requested.connect(
-            self._cycle_angle_mode
-        )
-        self.calculator_widget.display_mode_requested.connect(
-            self._cycle_display_mode
-        )
-        self.calculator_widget.fraction_toggle_requested.connect(
+        widget.angle_mode_requested.connect(self._cycle_angle_mode)
+        widget.display_mode_requested.connect(self._cycle_display_mode)
+        widget.fraction_toggle_requested.connect(
             self._toggle_fraction_display
         )
-        self.history_panel.expression_selected.connect(
-            self.calculator_widget.set_expression
-        )
+        self.history_panel.expression_selected.connect(widget.set_expression)
 
     def _synchronize_state_display(self) -> None:
-        """프로그램 시작 시 Controller 상태와 GUI 표시를 맞춘다."""
         state = self.calculator_controller.state
         self.calculator_widget.set_angle_mode(state.angle_mode.value)
         self.calculator_widget.set_display_mode(state.display_mode_label)
+        self._display_statistics_result(
+            self.statistics_controller.redisplay()
+        )
 
     def _toggle_history_panel(self) -> None:
-        """HISTORY 버튼으로 오른쪽 패널을 열거나 닫는다."""
         if self.history_panel.isVisible():
             self.history_panel.hide()
         else:
@@ -86,12 +87,10 @@ class MainWindow(QMainWindow):
             self.main_splitter.setSizes([800, 250])
 
     def _cycle_angle_mode(self) -> None:
-        """DRG 요청을 처리하고 변경된 각도 모드를 화면에 표시한다."""
         angle_mode = self.calculator_controller.cycle_angle_mode()
         self.calculator_widget.set_angle_mode(angle_mode.value)
 
     def _cycle_display_mode(self) -> None:
-        """FMT 요청을 처리하고 최근 결과들을 새 형식으로 다시 표시한다."""
         self.calculator_controller.cycle_display_mode()
         state = self.calculator_controller.state
         self.calculator_widget.set_display_mode(state.display_mode_label)
@@ -100,18 +99,20 @@ class MainWindow(QMainWindow):
         if calculation is not None:
             self.calculator_widget.set_result(calculation.display_text)
 
+        self._display_statistics_result(
+            self.statistics_controller.redisplay()
+        )
+
         equation_result = self.equation_controller.redisplay_last_solution()
         if equation_result is not None:
             self._display_equation_result(equation_result)
 
     def _toggle_fraction_display(self) -> None:
-        """S⇔D 요청으로 최근 일반 계산 결과의 소수·분수 표시를 전환한다."""
         calculation = self.calculator_controller.toggle_fraction_display()
         if calculation is not None:
             self.calculator_widget.set_result(calculation.display_text)
 
     def _handle_calculate_request(self, expression: str) -> None:
-        """Controller에 일반 계산을 요청하고 결과와 기록을 갱신한다."""
         calculation = self.calculator_controller.calculate(expression)
         self.calculator_widget.set_result(calculation.display_text)
 
@@ -121,21 +122,52 @@ class MainWindow(QMainWindow):
                 calculation.display_text,
             )
 
+    def _handle_statistics_add_request(self, text: str) -> None:
+        result = self.statistics_controller.add_values(text)
+        self._display_statistics_result(result)
+
+        if result.is_success:
+            self.calculator_widget.clear_statistics_input()
+
+    def _handle_statistics_remove_request(self, index: int) -> None:
+        self._display_statistics_result(
+            self.statistics_controller.remove_value(index)
+        )
+
+    def _handle_statistics_clear_request(self) -> None:
+        self._display_statistics_result(
+            self.statistics_controller.clear()
+        )
+
+    def _display_statistics_result(
+        self,
+        result: StatisticsDisplayResult,
+    ) -> None:
+        if not result.is_success:
+            self.calculator_widget.set_statistics_error(
+                result.error_message
+            )
+            return
+
+        self.calculator_widget.set_statistics_display(
+            result.data_rows,
+            result.summary_items,
+        )
+
     def _handle_quadratic_solve_request(
         self,
         a_text: str,
         b_text: str,
         c_text: str,
     ) -> None:
-        """EquationPage의 계수로 이차방정식을 계산한다."""
-        result = self.equation_controller.solve(a_text, b_text, c_text)
-        self._display_equation_result(result)
+        self._display_equation_result(
+            self.equation_controller.solve(a_text, b_text, c_text)
+        )
 
     def _display_equation_result(
         self,
         result: EquationDisplayResult,
     ) -> None:
-        """EquationController 결과를 성공 또는 오류 화면으로 전달한다."""
         if not result.is_success:
             self.calculator_widget.set_equation_error(result.error_message)
             return
