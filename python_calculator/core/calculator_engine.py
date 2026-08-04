@@ -18,5 +18,6 @@ class CalculatorEngine:
         parser = ExpressionParser(
             tokens,
             angle_mode=self._state.angle_mode,
+            answer=self._state.answer,
         )
         return parser.parse()
