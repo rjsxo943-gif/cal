@@ -1,88 +1,141 @@
-# C++ Console Scientific Calculator
+# C++ Win32 Scientific Calculator
 
-외부 GUI 라이브러리 없이 **Visual Studio와 표준 C++17만으로 빌드되는 콘솔 공학용 계산기**입니다. 완성된 `python_calculator/`를 계산 동작의 기준으로 사용합니다.
+외부 GUI 프레임워크 없이 **순수 C++17 + Windows Win32 API**로 만든 버튼형 공학용 계산기입니다. 계산 엔진은 사용자 정의 Tokenizer와 재귀 하강 Parser를 사용하며, 완성된 `python_calculator/`의 계산 동작을 기준으로 구현했습니다.
 
-## Features
+## 가장 쉬운 실행 방법
 
-- 재귀 하강 파서: `+ - * / ^`, 괄호, 단항 부호
-- 후위 연산: 팩토리얼 `!`, 백분율 `%`
-- 상수와 상태: `pi`, `π`, `e`, `Ans`
-- 공학 함수: 삼각·역삼각·로그·제곱근·절댓값·역수
-- 정수 함수: `npr`, `ncr`, `gcd`, `lcm`, `quot`, `rem`, `mod`, `root`
-- 난수: `random()`, `randint(a,b)`
+CMake는 필요하지 않습니다.
+
+1. `C:\Users\user\cal\cpp_calculator\ScientificCalculator.sln`을 더블클릭합니다.
+2. Visual Studio 상단 구성을 `Debug`, 플랫폼을 `x64`로 둡니다.
+3. 솔루션 탐색기에서 `ScientificCalculator`을 우클릭합니다.
+4. **시작 프로젝트로 설정**을 누릅니다.
+5. `Ctrl + F5` 또는 `F5`로 실행합니다.
+
+Visual Studio Installer에는 다음 워크로드가 필요합니다.
+
+```text
+C++를 사용한 데스크톱 개발
+Windows 10 또는 Windows 11 SDK
+최신 MSVC x64/x86 빌드 도구
+```
+
+Qt, Qt VS Tools, CMake, vcpkg는 버튼형 프로그램을 실행하는 데 필요하지 않습니다.
+
+## GUI 구성
+
+```text
+CALC   일반·공학 계산
+STAT   1변수 통계
+EQN    이차방정식
+CMPLX  복소수 직교형·극형 변환
+```
+
+CALC 화면:
+
+- 숫자·연산자·괄호 버튼
+- 삼각함수, 로그, 제곱근
+- 순열·조합, GCD·LCM, 몫·나머지
+- 팩토리얼과 퍼센트
+- `pi`, `e`, `Ans`, 난수
+- SHIFT 라벨·입력 전환
 - DEG / RAD / GRAD
 - NORM / FIX4 / SCI4
-- S⇔D 단순 분수 표시
-- 계산 기록
-- 1변수 통계
-- 이차방정식
-- 복소수 직교형·극형 변환
-- 대화형 메뉴와 `--eval` 자동 실행 모드
-- 외부 테스트 프레임워크가 필요 없는 CTest 테스트
+- S⇔D 분수·소수 전환
+- 왼쪽·오른쪽 커서, DEL, AC
+- 계산 기록과 더블클릭 복원
+- 수식창에서 Enter 계산, Esc 초기화
 
-## Requirements
+STAT 화면:
 
-- Visual Studio 2026의 **C++를 사용한 데스크톱 개발** 워크로드
-- CMake 3.21 이상
-- C++17 컴파일러
+- 공백·쉼표·세미콜론으로 여러 값 입력
+- 값 추가·선택 삭제·전체 삭제
+- 개수, 합계, 평균, 최솟값, 최댓값
+- 모집단·표본 분산과 표준편차
 
-Qt, Qt VS Tools, vcpkg 및 별도 수학 라이브러리는 필요하지 않습니다.
+EQN 화면:
 
-## Build in PowerShell
+- `a`, `b`, `c` 입력
+- `ax² + bx + c = 0` 계산
+- 서로 다른 실근, 중근, 복소근 표시
+
+CMPLX 화면:
+
+- 직교형 또는 극형 입력
+- 복소수, 켤레복소수, 크기, 위상 표시
+- 현재 DEG / RAD / GRAD 상태 사용
+
+## Visual Studio 프로젝트
+
+```text
+ScientificCalculator.sln
+├─ ScientificCalculator   버튼형 Win32 GUI
+└─ CalculatorTests        계산 엔진 테스트
+```
+
+일반적으로 Debug 실행 파일은 다음 경로에 생성됩니다.
+
+```text
+cpp_calculator\x64\Debug\ScientificCalculator.exe
+```
+
+## 계산 문법
+
+```text
++  -  *  /  ^
+( )  !  %
+pi  e  Ans
+sin cos tan asin acos atan
+log ln sqrt abs recip
+npr ncr gcd lcm quot rem mod root
+random() randint(a,b)
+```
+
+예시:
+
+```text
+2+3*4
+sin(30)
+root(3,-8)
+ncr(10,3)
+gcd(84,30)
+Ans*2
+```
+
+## 선택 사항: CMake
+
+CMake가 설치된 환경에서는 다음 방식도 사용할 수 있습니다.
 
 ```powershell
 cd C:\Users\user\cal\cpp_calculator
 cmake -S . -B build
 cmake --build build --config Debug
 ctest --test-dir build -C Debug --output-on-failure
-.\build\Debug\scientific_calculator.exe
 ```
 
-Ninja 같은 단일 구성 생성기를 사용하면 실행 파일은 보통 다음 위치에 생성됩니다.
-
-```powershell
-.\build\scientific_calculator.exe
-```
-
-## Open in Visual Studio
-
-1. Visual Studio 실행
-2. **파일 → 열기 → 폴더**
-3. `C:\Users\user\cal\cpp_calculator` 선택
-4. CMake 구성이 끝나면 시작 항목에서 `scientific_calculator.exe` 선택
-5. `Ctrl+F5` 또는 `F5`
-
-새 콘솔 프로젝트를 별도로 만들 필요가 없습니다. 이 폴더의 `CMakeLists.txt`가 Visual Studio 프로젝트 역할을 합니다.
-
-## Command-line mode
-
-```powershell
-.\build\Debug\scientific_calculator.exe --eval "2+3*4"
-.\build\Debug\scientific_calculator.exe --eval "sin(30)" --angle DEG
-.\build\Debug\scientific_calculator.exe --eval "1/3" --format FIX4
-.\build\Debug\scientific_calculator.exe --help
-.\build\Debug\scientific_calculator.exe --version
-```
-
-종료 코드:
-
-- `0`: 성공
-- `1`: 계산 또는 수식 오류
-- `2`: 잘못된 명령줄 옵션
-
-## Interactive commands
-
-일반 계산 화면에서 사용할 수 있습니다.
+Windows CMake 빌드 대상:
 
 ```text
-:back       메인 메뉴
-:history    계산 기록
-:help       지원 문법
-:drg        DEG → RAD → GRAD
-:fmt        NORM → FIX4 → SCI4
-:sd         최근 결과의 소수/분수 전환
-:clear      최근 표시만 초기화(Ans 유지)
+scientific_calculator       Win32 버튼형 GUI
+scientific_calculator_cli   기존 CLI 버전
+calculator_tests            자동 테스트
 ```
+
+## Architecture
+
+```text
+Win32 GUI / optional CLI
+          ↓
+CalculatorController / mode controllers
+          ↓
+CalculatorState
+          ↓
+Tokenizer → ExpressionParser → CalculatorEngine
+          ↓
+ResultFormatter / CalculationHistory
+```
+
+GUI는 계산식을 직접 해석하지 않습니다. 계산·상태·표시 형식은 기존 독립 엔진에서 처리하므로 CLI와 GUI가 같은 계산 결과를 사용합니다.
 
 ## Error messages
 
@@ -97,44 +150,6 @@ Magnitude must not be negative
 Select a data row
 ```
 
-## Tests
+## Validation status
 
-```powershell
-ctest --test-dir build -C Debug --output-on-failure
-```
-
-Linux/Ninja 환경:
-
-```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
-cmake --build build
-ctest --test-dir build --output-on-failure
-```
-
-Python과 대표 수식 결과를 비교하려면 Python 가상환경을 활성화한 뒤 실행합니다.
-
-```powershell
-python tools\compare_with_python.py build\Debug\scientific_calculator.exe
-```
-
-## Architecture
-
-```text
-ConsoleApplication
-        ↓
-CalculatorController / mode controllers
-        ↓
-CalculatorState
-        ↓
-Tokenizer → ExpressionParser → CalculatorEngine
-        ↓
-ResultFormatter / CalculationHistory
-```
-
-`core/`와 `modes/`는 콘솔 입출력에 의존하지 않으므로 나중에 GUI를 다시 붙여도 계산 엔진을 재사용할 수 있습니다.
-
-## Known limitations
-
-- C++ 1.0은 콘솔 버전이며 GUI를 포함하지 않습니다.
-- 복소수 모드는 변환·크기·위상·켤레를 지원하지만 일반 복소수 수식 파서는 지원하지 않습니다.
-- 삼차방정식, 연립방정식, 회귀분석, 그래프, 단위 변환, 파일 기반 기록은 Future Work입니다.
+계산 엔진의 기존 자동 테스트 94개는 통과한 상태입니다. Win32 GUI는 Windows SDK와 MSVC가 없는 개발 환경에서 작성되어, 실제 Windows 빌드·실행 확인은 사용자의 Visual Studio에서 최종 확인해야 합니다. 빌드 오류가 나오면 오류 메시지를 기준으로 바로 수정합니다.
