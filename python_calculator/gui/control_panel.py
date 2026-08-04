@@ -1,4 +1,4 @@
-"""SHIFT, MODE, 방향키, DEL, AC 등 공통 제어 버튼 영역."""
+"""SHIFT, MODE, 각도 모드, 방향키, DEL, AC 등 공통 제어 버튼 영역."""
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QGridLayout, QPushButton, QWidget
@@ -11,6 +11,7 @@ class ControlPanel(QWidget):
     # 버튼이 눌렸다는 사실만 Signal로 외부에 전달한다.
     shift_requested = Signal()
     mode_requested = Signal()
+    angle_mode_requested = Signal()
     cursor_left_requested = Signal()
     cursor_right_requested = Signal()
     history_up_requested = Signal()
@@ -34,18 +35,24 @@ class ControlPanel(QWidget):
         self.shift_button.setProperty("active", False)
 
         self.mode_button = self._add_button(layout, "MODE", 0, 1)
-        left_button = self._add_button(layout, "◀", 0, 2)
-        up_button = self._add_button(layout, "▲", 0, 3)
-        down_button = self._add_button(layout, "▼", 0, 4)
-        right_button = self._add_button(layout, "▶", 0, 5)
 
-        history_button = self._add_button(layout, "HISTORY", 1, 0, 1, 2)
-        delete_button = self._add_button(layout, "DEL", 1, 2, 1, 2)
-        clear_button = self._add_button(layout, "AC", 1, 4, 1, 2)
+        # DRG는 Degree, Radian, Gradian의 앞 글자를 뜻한다.
+        # 누를 때마다 DEG → RAD → GRAD 순서로 전환한다.
+        self.angle_mode_button = self._add_button(layout, "DRG", 0, 2)
+
+        left_button = self._add_button(layout, "◀", 0, 3)
+        up_button = self._add_button(layout, "▲", 0, 4)
+        down_button = self._add_button(layout, "▼", 0, 5)
+        right_button = self._add_button(layout, "▶", 0, 6)
+
+        history_button = self._add_button(layout, "HISTORY", 1, 0, 1, 3)
+        delete_button = self._add_button(layout, "DEL", 1, 3, 1, 2)
+        clear_button = self._add_button(layout, "AC", 1, 5, 1, 2)
 
         # 버튼 클릭 신호를 이 클래스의 의미 있는 요청 신호로 바꾼다.
         self.shift_button.clicked.connect(self.shift_requested.emit)
         self.mode_button.clicked.connect(self.mode_requested.emit)
+        self.angle_mode_button.clicked.connect(self.angle_mode_requested.emit)
         left_button.clicked.connect(self.cursor_left_requested.emit)
         right_button.clicked.connect(self.cursor_right_requested.emit)
         up_button.clicked.connect(self.history_up_requested.emit)
