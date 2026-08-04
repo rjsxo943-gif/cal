@@ -1,0 +1,49 @@
+# Python virtual environments
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Test and coverage files
+.coverage
+htmlcov/
+
+# Python build files
+build/
+dist/
+*.egg-info/
+
+# Visual Studio
+.vs/
+Debug/
+Release/
+x64/
+x86/
+*.user
+*.suo
+*.VC.db
+*.VC.opendb
+
+# C++ build files
+*.obj
+*.exe
+*.dll
+*.lib
+*.pdb
+*.ilk
+
+# Qt generated files
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+*.pro.user
+CMakeLists.txt.user
+
+# Editor and operating system files
+.vscode/
+Thumbs.db
+Desktop.ini
+.DS_Store
