@@ -50,10 +50,10 @@ class StatisticsController:
             parsed_values = self._parse_values(text)
             self._values.extend(parsed_values)
             return self._build_display()
-        except (ValueError, CalculatorError) as error:
+        except CalculatorError as error:
             return StatisticsDisplayResult(
                 is_success=False,
-                error_message=str(error) or "Invalid input",
+                error_message=str(error),
             )
 
     def remove_value(self, index: int) -> StatisticsDisplayResult:
@@ -93,7 +93,11 @@ class StatisticsController:
         if not pieces:
             raise InvalidInputError()
 
-        values = [float(piece) for piece in pieces]
+        try:
+            values = [float(piece) for piece in pieces]
+        except ValueError as error:
+            raise InvalidInputError() from error
+
         if any(not math.isfinite(value) for value in values):
             raise InvalidInputError()
 
