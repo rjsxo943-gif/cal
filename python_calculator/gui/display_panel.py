@@ -18,7 +18,6 @@ class DisplayPanel(QFrame):
         main_layout.setContentsMargins(14, 12, 14, 12)
         main_layout.setSpacing(4)
 
-        # 계산기의 현재 각도·표시·계산 모드와 SHIFT 상태를 보여준다.
         status_layout = QHBoxLayout()
 
         self.angle_label = self._create_status_label("DEG")
@@ -32,14 +31,11 @@ class DisplayPanel(QFrame):
         status_layout.addStretch()
         status_layout.addWidget(self.shift_label)
 
-        # QLineEdit을 사용하면 마우스와 키보드로 커서 이동, 삽입,
-        # Backspace 등의 기본 편집 기능을 사용할 수 있다.
         self.expression_edit = QLineEdit()
         self.expression_edit.setObjectName("expressionEdit")
         self.expression_edit.setPlaceholderText("수식을 입력하세요")
         self.expression_edit.setClearButtonEnabled(False)
 
-        # 결과는 사용자가 직접 수정하지 않으므로 QLabel로 표시한다.
         self.result_label = QLabel("0")
         self.result_label.setObjectName("resultLabel")
         self.result_label.setAlignment(Qt.AlignmentFlag.AlignRight)
@@ -101,5 +97,9 @@ class DisplayPanel(QFrame):
         self.mode_label.setText(mode_name)
 
     def set_angle_mode(self, angle_mode_name: str) -> None:
-        """현재 삼각함수 각도 단위를 상단 상태 영역에 표시한다."""
+        """현재 삼각함수 각도 단위를 표시한다."""
         self.angle_label.setText(angle_mode_name)
+
+    def set_display_mode(self, display_mode_name: str) -> None:
+        """현재 결과 표시 형식을 상단 상태 영역에 표시한다."""
+        self.format_label.setText(display_mode_name)
