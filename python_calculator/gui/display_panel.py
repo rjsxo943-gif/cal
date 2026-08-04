@@ -99,3 +99,7 @@ class DisplayPanel(QFrame):
     def set_mode_name(self, mode_name: str) -> None:
         """현재 계산 모드의 축약 이름을 표시한다."""
         self.mode_label.setText(mode_name)
+
+    def set_angle_mode(self, angle_mode_name: str) -> None:
+        """현재 삼각함수 각도 단위를 상단 상태 영역에 표시한다."""
+        self.angle_label.setText(angle_mode_name)
