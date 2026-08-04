@@ -3,6 +3,7 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMainWindow, QSplitter
 
+from core.calculator_controller import CalculatorController
 from gui.calculator_widget import CalculatorWidget
 from gui.history_panel import HistoryPanel
 
@@ -12,6 +13,9 @@ class MainWindow(QMainWindow):
 
     def __init__(self) -> None:
         super().__init__()
+
+        # GUI가 계산 규칙을 직접 알지 않도록 Controller를 별도로 둔다.
+        self.calculator_controller = CalculatorController()
 
         # 창 전체 수준의 설정만 MainWindow에서 담당한다.
         self.setWindowTitle("Scientific Calculator")
@@ -61,12 +65,15 @@ class MainWindow(QMainWindow):
             self.main_splitter.setSizes([800, 250])
 
     def _handle_calculate_request(self, expression: str) -> None:
-        """
-        Phase 1의 임시 계산 요청 처리 함수다.
+        """Controller에 계산을 요청하고 결과와 기록을 갱신한다."""
+        calculation = self.calculator_controller.calculate(expression)
 
-        실제 계산은 Phase 2에서 CalculatorController와
-        CalculatorEngine을 연결한 뒤 이 함수에서 제거한다.
-        """
-        result = "ENGINE NOT CONNECTED"
-        self.calculator_widget.set_result(result)
-        self.history_panel.add_entry(expression, result)
+        # 성공과 오류 모두 Controller가 정한 공통 문자열로 표시한다.
+        self.calculator_widget.set_result(calculation.display_text)
+
+        # 오류 수식은 계산 기록에 추가하지 않고 성공한 계산만 저장한다.
+        if calculation.is_success:
+            self.history_panel.add_entry(
+                expression,
+                calculation.display_text,
+            )
