@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from core.calculator_engine import CalculatorEngine
 from core.calculator_errors import CalculatorError
-from core.calculator_state import CalculatorState
+from core.calculator_state import AngleMode, CalculatorState
 from core.result_formatter import ResultFormatter
 
 
@@ -41,7 +41,7 @@ class CalculatorController:
                 is_success=False,
             )
 
-        # 다음 단계의 Ans 기능에서 사용할 수 있도록 최근 성공 결과를 저장한다.
+        # 오류가 아닌 가장 최근 성공 결과만 Ans로 저장한다.
         self.state.answer = numeric_value
 
         return CalculationResult(
@@ -49,3 +49,11 @@ class CalculatorController:
             is_success=True,
             numeric_value=numeric_value,
         )
+
+    def set_angle_mode(self, angle_mode: AngleMode) -> None:
+        """GUI에서 직접 선택한 각도 모드를 상태에 반영한다."""
+        self.state.set_angle_mode(angle_mode)
+
+    def cycle_angle_mode(self) -> AngleMode:
+        """다음 각도 모드로 전환하고 변경된 모드를 반환한다."""
+        return self.state.cycle_angle_mode()
