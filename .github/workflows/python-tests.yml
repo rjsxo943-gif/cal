@@ -1,0 +1,32 @@
+name: Python Calculator Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "python_calculator/**"
+      - ".github/workflows/python-tests.yml"
+  pull_request:
+    paths:
+      - "python_calculator/**"
+      - ".github/workflows/python-tests.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependency
+        run: python -m pip install --upgrade pytest
+
+      - name: Run basic calculator tests
+        working-directory: python_calculator
+        run: python -m pytest -q
