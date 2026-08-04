@@ -1,8 +1,5 @@
 """GUI 스타일을 계산 로직과 분리해서 관리한다."""
 
-# 첫 버전에서는 라이트 테마 하나만 사용한다.
-# 나중에 다크 테마를 추가해도 계산 엔진 코드는 수정하지 않도록
-# 스타일을 별도 파일에 모아 둔다.
 APP_STYLE = """
 QWidget {
     font-family: "Segoe UI";
@@ -58,6 +55,13 @@ QPushButton:pressed {
 QPushButton#shiftButton[active="true"] {
     background-color: #fef3c7;
     border-color: #f59e0b;
+    font-weight: 700;
+}
+
+QPushButton[shifted="true"] {
+    background-color: #fff7ed;
+    border-color: #fb923c;
+    color: #9a3412;
     font-weight: 700;
 }
 
