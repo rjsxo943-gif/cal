@@ -6,7 +6,6 @@ from PySide6.QtCore import Signal
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QGridLayout,
-    QLabel,
     QMenu,
     QPushButton,
     QStackedWidget,
@@ -148,20 +147,50 @@ class CalculatorWidget(QWidget):
         layout.setSpacing(7)
 
         buttons: list[tuple[str, str | None]] = [
-            ("sin", "sin("), ("cos", "cos("), ("tan", "tan("),
-            ("log", "log("), ("ln", "ln("),
-            ("x²", "^2"), ("xʸ", "^"), ("√", "sqrt("),
-            ("π", "pi"), ("e", "e"),
-            ("abs", "abs("), ("1/x", "recip("), ("x!", "!"),
-            ("nPr", "npr("), ("nCr", "ncr("),
-            ("mod", "mod("), ("GCD", "gcd("), ("LCM", "lcm("),
-            (",", ","), ("(", "("),
-            ("quot", "quot("), ("rem", "rem("), ("%", "%"),
-            ("root", "root("), ("Ran#", "random()"),
-            ("7", "7"), ("8", "8"), ("9", "9"), ("÷", "/"), (")", ")"),
-            ("4", "4"), ("5", "5"), ("6", "6"), ("×", "*"), ("Ans", "Ans"),
-            ("1", "1"), ("2", "2"), ("3", "3"), ("-", "-"), ("EXP", "E"),
-            ("0", "0"), (".", "."), ("+", "+"), ("=", None),
+            ("sin", "sin("),
+            ("cos", "cos("),
+            ("tan", "tan("),
+            ("log", "log("),
+            ("ln", "ln("),
+            ("x²", "^2"),
+            ("xʸ", "^"),
+            ("√", "sqrt("),
+            ("π", "pi"),
+            ("e", "e"),
+            ("abs", "abs("),
+            ("1/x", "recip("),
+            ("x!", "!"),
+            ("nPr", "npr("),
+            ("nCr", "ncr("),
+            ("mod", "mod("),
+            ("GCD", "gcd("),
+            ("LCM", "lcm("),
+            (",", ","),
+            ("(", "("),
+            ("quot", "quot("),
+            ("rem", "rem("),
+            ("%", "%"),
+            ("root", "root("),
+            ("Ran#", "random()"),
+            ("7", "7"),
+            ("8", "8"),
+            ("9", "9"),
+            ("÷", "/"),
+            (")", ")"),
+            ("4", "4"),
+            ("5", "5"),
+            ("6", "6"),
+            ("×", "*"),
+            ("Ans", "Ans"),
+            ("1", "1"),
+            ("2", "2"),
+            ("3", "3"),
+            ("-", "-"),
+            ("EXP", "E"),
+            ("0", "0"),
+            (".", "."),
+            ("+", "+"),
+            ("=", None),
         ]
 
         for index, (label, inserted_text) in enumerate(buttons):
@@ -221,6 +250,7 @@ class CalculatorWidget(QWidget):
     def _set_mode(self, page_index: int) -> None:
         self.mode_stack.setCurrentIndex(page_index)
         self.display_panel.set_mode_name(self.MODE_NAMES[page_index])
+        self.display_panel.set_compact_mode(page_index != 0)
 
         if page_index == 1:
             self.statistics_page.focus_input()
