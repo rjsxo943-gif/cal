@@ -96,6 +96,11 @@ class DisplayPanel(QFrame):
         """현재 계산 모드의 축약 이름을 표시한다."""
         self.mode_label.setText(mode_name)
 
+    def set_compact_mode(self, compact: bool) -> None:
+        """비계산 모드에서는 사용하지 않는 수식·결과 영역을 숨긴다."""
+        self.expression_edit.setVisible(not compact)
+        self.result_label.setVisible(not compact)
+
     def set_angle_mode(self, angle_mode_name: str) -> None:
         """현재 삼각함수 각도 단위를 표시한다."""
         self.angle_label.setText(angle_mode_name)
