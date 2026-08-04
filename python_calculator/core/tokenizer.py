@@ -16,6 +16,8 @@ class TokenType(Enum):
     MULTIPLY = auto()
     DIVIDE = auto()
     POWER = auto()
+    FACTORIAL = auto()
+    COMMA = auto()
     LEFT_PAREN = auto()
     RIGHT_PAREN = auto()
     END = auto()
@@ -41,6 +43,8 @@ class Tokenizer:
         "/": TokenType.DIVIDE,
         "÷": TokenType.DIVIDE,
         "^": TokenType.POWER,
+        "!": TokenType.FACTORIAL,
+        ",": TokenType.COMMA,
         "(": TokenType.LEFT_PAREN,
         ")": TokenType.RIGHT_PAREN,
     }
