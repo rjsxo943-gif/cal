@@ -1,6 +1,6 @@
 """복소수의 직교형·극형 입력과 변환 결과를 표시한다."""
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QDoubleValidator
 from PySide6.QtWidgets import (
     QFrame,
@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QScrollArea,
     QVBoxLayout,
     QWidget,
 )
@@ -27,7 +28,25 @@ class ComplexPage(QWidget):
         self.set_angle_mode("DEG")
 
     def _build_ui(self) -> None:
-        main_layout = QVBoxLayout(self)
+        """작은 창에서도 내용이 잘리지 않도록 스크롤 가능한 화면을 만든다."""
+        outer_layout = QVBoxLayout(self)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+        self.scroll_area.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        self.scroll_area.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAsNeeded
+        )
+
+        content = QWidget()
+        # 결과 표의 여섯 행이 Qt에 의해 눌리지 않도록 최소 높이를 보장한다.
+        content.setMinimumHeight(520)
+
+        main_layout = QVBoxLayout(content)
         main_layout.setContentsMargins(18, 12, 18, 18)
         main_layout.setSpacing(12)
 
@@ -95,6 +114,7 @@ class ComplexPage(QWidget):
         self.error_label.setStyleSheet("color: #b91c1c; font-weight: 600;")
 
         result_frame = QFrame()
+        result_frame.setMinimumHeight(190)
         result_frame.setStyleSheet(
             "QFrame { background: #f8fafc; border: 1px solid #cbd5e1; "
             "border-radius: 9px; }"
@@ -131,6 +151,9 @@ class ComplexPage(QWidget):
         main_layout.addWidget(self.error_label)
         main_layout.addWidget(result_frame)
         main_layout.addStretch()
+
+        self.scroll_area.setWidget(content)
+        outer_layout.addWidget(self.scroll_area)
 
         self.clear()
 
