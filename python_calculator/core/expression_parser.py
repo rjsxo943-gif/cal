@@ -1,6 +1,7 @@
 """Token 목록을 재귀 하강 방식으로 해석해 실수 결과를 만든다."""
 
 import math
+import random
 import sys
 
 from core.angle_converter import AngleConverter
@@ -40,6 +41,11 @@ class ExpressionParser:
         "mod",
         "gcd",
         "lcm",
+        "quot",
+        "rem",
+        "root",
+        "random",
+        "randint",
     }
 
     def __init__(
@@ -47,6 +53,7 @@ class ExpressionParser:
         tokens: list[Token],
         angle_mode: AngleMode = AngleMode.DEG,
         answer: float = 0.0,
+        random_generator: random.Random | None = None,
     ) -> None:
         if not tokens:
             raise SyntaxCalculatorError()
@@ -55,6 +62,12 @@ class ExpressionParser:
         self._current_index = 0
         self._angle_mode = angle_mode
         self._answer = answer
+
+        # 난수 생성기를 외부에서 주입할 수 있게 해두면 테스트에서는
+        # 고정된 seed를 사용하고 실제 프로그램에서는 일반 난수를 사용한다.
+        self._random_generator = (
+            random_generator if random_generator is not None else random.Random()
+        )
 
     def parse(self) -> float:
         """전체 수식을 계산하고 남은 토큰이 없는지 확인한다."""
@@ -145,12 +158,20 @@ class ExpressionParser:
         return float(result)
 
     def _parse_postfix(self) -> float:
-        """숫자나 괄호 뒤에 붙는 팩토리얼 연산자를 처리한다."""
+        """값 뒤에 붙는 팩토리얼과 백분율 연산자를 처리한다."""
         value = self._parse_primary()
 
-        while self._current_token().token_type is TokenType.FACTORIAL:
-            self._advance()
-            value = self._factorial(value)
+        while self._current_token().token_type in (
+            TokenType.FACTORIAL,
+            TokenType.PERCENT,
+        ):
+            operator = self._advance().token_type
+
+            if operator is TokenType.FACTORIAL:
+                value = self._factorial(value)
+            else:
+                # 50%는 50 / 100, 즉 0.5로 해석한다.
+                value /= 100.0
 
         return value
 
@@ -217,6 +238,20 @@ class ExpressionParser:
     def _evaluate_function(self, name: str, arguments: list[float]) -> float:
         """함수명과 인자 목록을 실제 계산으로 연결한다."""
         try:
+            if name == "random":
+                self._zero_arguments(arguments)
+                return self._random_generator.random()
+
+            if name == "randint":
+                first_value, second_value = self._two_arguments(arguments)
+                first = self._integer(first_value)
+                second = self._integer(second_value)
+
+                if first > second:
+                    raise MathCalculatorError()
+
+                return float(self._random_generator.randint(first, second))
+
             if name == "sqrt":
                 argument = self._one_argument(arguments)
                 if argument < 0.0:
@@ -300,11 +335,34 @@ class ExpressionParser:
                 self._ensure_combination_fits_float(n, r)
                 return self._integer_result_to_float(math.comb(n, r))
 
-            if name == "mod":
+            if name in ("mod", "rem"):
                 dividend, divisor = self._two_arguments(arguments)
                 if divisor == 0.0:
                     raise DivisionByZeroCalculatorError()
                 return math.fmod(dividend, divisor)
+
+            if name == "quot":
+                dividend, divisor = self._two_arguments(arguments)
+                if divisor == 0.0:
+                    raise DivisionByZeroCalculatorError()
+
+                # Python의 //는 음수에서 아래쪽 정수로 내림한다.
+                # C++ 정수 나눗셈과 맞추기 위해 0 방향으로 절삭한다.
+                return float(math.trunc(dividend / divisor))
+
+            if name == "root":
+                degree_value, radicand = self._two_arguments(arguments)
+                degree = self._nonnegative_integer(degree_value)
+
+                if degree == 0:
+                    raise MathCalculatorError()
+
+                if radicand < 0.0:
+                    if degree % 2 == 0:
+                        raise MathCalculatorError()
+                    return -((-radicand) ** (1.0 / degree))
+
+                return radicand ** (1.0 / degree)
 
             if name == "gcd":
                 first_value, second_value = self._two_arguments(arguments)
@@ -329,12 +387,16 @@ class ExpressionParser:
         """0 이상의 정수에 팩토리얼을 적용한다."""
         integer_value = self._nonnegative_integer(value)
 
-        # 171!부터는 IEEE 754 double 범위를 넘으므로 Python과 C++에서
-        # 동일하게 Overflow로 처리한다.
         if integer_value > 170:
             raise OverflowCalculatorError()
 
         return float(math.factorial(integer_value))
+
+    @staticmethod
+    def _zero_arguments(arguments: list[float]) -> None:
+        """인자가 없어야 하는 함수인지 확인한다."""
+        if arguments:
+            raise SyntaxCalculatorError()
 
     @staticmethod
     def _one_argument(arguments: list[float]) -> float:
