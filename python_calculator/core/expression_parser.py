@@ -2,24 +2,49 @@
 
 import math
 
+from core.angle_converter import AngleConverter
 from core.calculator_errors import (
     DivisionByZeroCalculatorError,
+    InvalidInputError,
     MathCalculatorError,
     OverflowCalculatorError,
     SyntaxCalculatorError,
 )
+from core.calculator_state import AngleMode
 from core.tokenizer import Token, TokenType
 
 
 class ExpressionParser:
     """연산자 우선순위를 함수 계층으로 표현하는 재귀 하강 파서."""
 
-    def __init__(self, tokens: list[Token]) -> None:
+    _CONSTANTS = {
+        "pi": math.pi,
+        "e": math.e,
+    }
+
+    _FUNCTION_NAMES = {
+        "sqrt",
+        "sin",
+        "cos",
+        "tan",
+        "asin",
+        "acos",
+        "atan",
+        "log",
+        "ln",
+    }
+
+    def __init__(
+        self,
+        tokens: list[Token],
+        angle_mode: AngleMode = AngleMode.DEG,
+    ) -> None:
         if not tokens:
             raise SyntaxCalculatorError()
 
         self._tokens = tokens
         self._current_index = 0
+        self._angle_mode = angle_mode
 
     def parse(self) -> float:
         """전체 수식을 계산하고 남은 토큰이 없는지 확인한다."""
@@ -88,12 +113,7 @@ class ExpressionParser:
         return self._parse_power()
 
     def _parse_power(self) -> float:
-        """
-        거듭제곱을 오른쪽 결합으로 처리한다.
-
-        오른쪽 피연산자를 _parse_unary()로 읽기 때문에
-        2^-2와 2^3^2를 모두 자연스럽게 처리할 수 있다.
-        """
+        """거듭제곱을 오른쪽 결합으로 처리한다."""
         base = self._parse_primary()
 
         if self._current_token().token_type is not TokenType.POWER:
@@ -109,19 +129,18 @@ class ExpressionParser:
         except OverflowError as error:
             raise OverflowCalculatorError() from error
 
-        # 일반 계산 모드에서는 복소수 결과를 허용하지 않는다.
         if isinstance(result, complex):
             raise MathCalculatorError()
 
         return float(result)
 
     def _parse_primary(self) -> float:
-        """숫자 또는 괄호로 묶인 하위 수식을 처리한다."""
+        """숫자, 괄호, 상수 또는 함수 호출을 처리한다."""
         token = self._current_token()
 
         if token.token_type is TokenType.NUMBER:
             self._advance()
-            if token.value is None:
+            if not isinstance(token.value, float):
                 raise SyntaxCalculatorError()
             return token.value
 
@@ -131,7 +150,91 @@ class ExpressionParser:
             self._consume(TokenType.RIGHT_PAREN)
             return value
 
+        if token.token_type is TokenType.IDENTIFIER:
+            return self._parse_identifier()
+
         raise SyntaxCalculatorError()
+
+    def _parse_identifier(self) -> float:
+        """상수 또는 괄호 하나를 인자로 받는 공학 함수를 처리한다."""
+        token = self._advance()
+
+        if not isinstance(token.value, str):
+            raise SyntaxCalculatorError()
+
+        name = token.value.lower()
+
+        if name in self._CONSTANTS:
+            return self._CONSTANTS[name]
+
+        if name not in self._FUNCTION_NAMES:
+            raise InvalidInputError()
+
+        # 함수는 sin(30), sqrt(16)처럼 괄호를 필수로 사용한다.
+        self._consume(TokenType.LEFT_PAREN)
+        argument = self._parse_expression()
+        self._consume(TokenType.RIGHT_PAREN)
+
+        return self._evaluate_function(name, argument)
+
+    def _evaluate_function(self, name: str, argument: float) -> float:
+        """함수명과 인자를 실제 math 계산으로 연결한다."""
+        try:
+            if name == "sqrt":
+                if argument < 0.0:
+                    raise MathCalculatorError()
+                return math.sqrt(argument)
+
+            if name == "sin":
+                radians = AngleConverter.to_radians(argument, self._angle_mode)
+                return math.sin(radians)
+
+            if name == "cos":
+                radians = AngleConverter.to_radians(argument, self._angle_mode)
+                return math.cos(radians)
+
+            if name == "tan":
+                radians = AngleConverter.to_radians(argument, self._angle_mode)
+
+                # 90°, pi/2 rad, 100 grad처럼 탄젠트가 정의되지 않는
+                # 위치를 부동소수점 오차 범위 안에서 Math ERROR로 처리한다.
+                if abs(math.cos(radians)) < 1e-12:
+                    raise MathCalculatorError()
+
+                return math.tan(radians)
+
+            if name == "asin":
+                if not -1.0 <= argument <= 1.0:
+                    raise MathCalculatorError()
+                radians = math.asin(argument)
+                return AngleConverter.from_radians(radians, self._angle_mode)
+
+            if name == "acos":
+                if not -1.0 <= argument <= 1.0:
+                    raise MathCalculatorError()
+                radians = math.acos(argument)
+                return AngleConverter.from_radians(radians, self._angle_mode)
+
+            if name == "atan":
+                radians = math.atan(argument)
+                return AngleConverter.from_radians(radians, self._angle_mode)
+
+            if name == "log":
+                if argument <= 0.0:
+                    raise MathCalculatorError()
+                return math.log10(argument)
+
+            if name == "ln":
+                if argument <= 0.0:
+                    raise MathCalculatorError()
+                return math.log(argument)
+
+        except OverflowError as error:
+            raise OverflowCalculatorError() from error
+        except ValueError as error:
+            raise MathCalculatorError() from error
+
+        raise InvalidInputError()
 
     def _current_token(self) -> Token:
         """현재 파서가 바라보는 토큰을 반환한다."""
