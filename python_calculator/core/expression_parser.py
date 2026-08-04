@@ -38,6 +38,7 @@ class ExpressionParser:
         self,
         tokens: list[Token],
         angle_mode: AngleMode = AngleMode.DEG,
+        answer: float = 0.0,
     ) -> None:
         if not tokens:
             raise SyntaxCalculatorError()
@@ -45,6 +46,7 @@ class ExpressionParser:
         self._tokens = tokens
         self._current_index = 0
         self._angle_mode = angle_mode
+        self._answer = answer
 
     def parse(self) -> float:
         """전체 수식을 계산하고 남은 토큰이 없는지 확인한다."""
@@ -135,7 +137,7 @@ class ExpressionParser:
         return float(result)
 
     def _parse_primary(self) -> float:
-        """숫자, 괄호, 상수 또는 함수 호출을 처리한다."""
+        """숫자, 괄호, 상수, Ans 또는 함수 호출을 처리한다."""
         token = self._current_token()
 
         if token.token_type is TokenType.NUMBER:
@@ -156,13 +158,17 @@ class ExpressionParser:
         raise SyntaxCalculatorError()
 
     def _parse_identifier(self) -> float:
-        """상수 또는 괄호 하나를 인자로 받는 공학 함수를 처리한다."""
+        """상수, Ans 또는 괄호 하나를 인자로 받는 공학 함수를 처리한다."""
         token = self._advance()
 
         if not isinstance(token.value, str):
             raise SyntaxCalculatorError()
 
         name = token.value.lower()
+
+        # Ans는 CalculatorState에 저장된 가장 최근 성공 결과를 사용한다.
+        if name == "ans":
+            return self._answer
 
         if name in self._CONSTANTS:
             return self._CONSTANTS[name]
