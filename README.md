@@ -2,7 +2,40 @@
 
 Python과 C++로 동일한 계산 동작을 구현한 **버튼형 공학용 계산기 프로젝트**입니다.
 
-Python 버전은 `PySide6`, C++ 버전은 별도 GUI 프레임워크 없이 `Win32 API`를 사용합니다. 두 프로그램은 화면 구현 방식은 다르지만, 같은 수식 문법·계산 결과·표시 모드·오류 메시지를 제공하도록 설계했습니다.
+Python 버전은 `PySide6`, C++ 버전은 별도 GUI 프레임워크 없이 `Win32 API`를 사용합니다. 두 프로그램은 화면 구현 기술은 다르지만 같은 수식 문법, 계산 결과, 각도 모드, 표시 형식, 오류 메시지를 제공하도록 설계했습니다.
+
+## Application Preview
+
+<table>
+  <tr>
+    <th>Python · PySide6</th>
+    <th>C++ · Win32 API</th>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="./pic/python계산기.png" alt="Python PySide6 scientific calculator" width="430">
+    </td>
+    <td align="center">
+      <img src="./pic/c%2B%2B계산기.png" alt="C++ Win32 scientific calculator" width="430">
+    </td>
+  </tr>
+</table>
+
+### Python GUI
+
+- PySide6 위젯과 스타일시트를 사용한 버튼형 인터페이스
+- 계산식 입력창, 결과 표시창, 상태 표시, 공학 함수 키 구성
+- `CALC / STAT / EQN / CMPLX` 모드 제공
+- 계산 기록 패널과 `SHIFT`, `S⇔D`, 각도·표시 모드 지원
+
+### C++ GUI
+
+- C++17과 Windows Win32 API만 사용한 네이티브 Windows 인터페이스
+- Qt 같은 외부 GUI 프레임워크 없이 Windows SDK와 MSVC로 빌드
+- Python 버전과 동일한 계산 엔진 규칙과 주요 모드 제공
+- Visual Studio 솔루션을 열어 바로 빌드하고 실행 가능
+
+두 화면의 디자인은 사용한 GUI 기술에 맞게 구현했지만, 사용자가 계산식을 입력하고 모드를 전환하는 흐름은 최대한 대응되도록 구성했습니다. GUI는 입력과 화면 갱신만 담당하고 실제 수식 계산은 독립된 엔진 계층에서 처리합니다.
 
 ## Project Status
 
@@ -39,7 +72,7 @@ C++ 버튼형 계산기는 Visual Studio 18, 플랫폼 도구 집합 `v145`, `De
 - `S⇔D` 소수·분수 전환
 - `SHIFT` 보조 기능
 - 실행 중 계산 기록
-- 기록 더블클릭 복원
+- 기록 항목 복원
 
 ### Additional Modes
 
@@ -168,6 +201,7 @@ Magnitude must not be negative
 
 ```text
 cal/
+├─ pic/                      Python·C++ 실행 화면
 ├─ python_calculator/        Python + PySide6 GUI
 ├─ cpp_calculator/           C++17 + Win32 API GUI
 │  ├─ include/               공통 인터페이스
