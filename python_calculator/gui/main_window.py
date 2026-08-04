@@ -4,6 +4,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMainWindow, QSplitter
 
 from core.calculator_controller import CalculatorController
+from core.equation_controller import EquationController, EquationDisplayResult
 from gui.calculator_widget import CalculatorWidget
 from gui.history_panel import HistoryPanel
 
@@ -15,6 +16,12 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.calculator_controller = CalculatorController()
+
+        # EquationController도 같은 CalculatorState를 공유하므로
+        # FMT 변경이 일반 계산과 방정식 결과에 동일하게 적용된다.
+        self.equation_controller = EquationController(
+            self.calculator_controller.state
+        )
 
         self.setWindowTitle("Scientific Calculator")
         self.resize(1050, 720)
@@ -47,6 +54,9 @@ class MainWindow(QMainWindow):
         )
         self.calculator_widget.calculate_requested.connect(
             self._handle_calculate_request
+        )
+        self.calculator_widget.quadratic_solve_requested.connect(
+            self._handle_quadratic_solve_request
         )
         self.calculator_widget.angle_mode_requested.connect(
             self._cycle_angle_mode
@@ -81,7 +91,7 @@ class MainWindow(QMainWindow):
         self.calculator_widget.set_angle_mode(angle_mode.value)
 
     def _cycle_display_mode(self) -> None:
-        """FMT 요청을 처리하고 최근 결과를 새 형식으로 다시 표시한다."""
+        """FMT 요청을 처리하고 최근 결과들을 새 형식으로 다시 표시한다."""
         self.calculator_controller.cycle_display_mode()
         state = self.calculator_controller.state
         self.calculator_widget.set_display_mode(state.display_mode_label)
@@ -90,14 +100,18 @@ class MainWindow(QMainWindow):
         if calculation is not None:
             self.calculator_widget.set_result(calculation.display_text)
 
+        equation_result = self.equation_controller.redisplay_last_solution()
+        if equation_result is not None:
+            self._display_equation_result(equation_result)
+
     def _toggle_fraction_display(self) -> None:
-        """S⇔D 요청으로 최근 결과의 소수·분수 표시를 전환한다."""
+        """S⇔D 요청으로 최근 일반 계산 결과의 소수·분수 표시를 전환한다."""
         calculation = self.calculator_controller.toggle_fraction_display()
         if calculation is not None:
             self.calculator_widget.set_result(calculation.display_text)
 
     def _handle_calculate_request(self, expression: str) -> None:
-        """Controller에 계산을 요청하고 결과와 기록을 갱신한다."""
+        """Controller에 일반 계산을 요청하고 결과와 기록을 갱신한다."""
         calculation = self.calculator_controller.calculate(expression)
         self.calculator_widget.set_result(calculation.display_text)
 
@@ -106,3 +120,28 @@ class MainWindow(QMainWindow):
                 expression,
                 calculation.display_text,
             )
+
+    def _handle_quadratic_solve_request(
+        self,
+        a_text: str,
+        b_text: str,
+        c_text: str,
+    ) -> None:
+        """EquationPage의 계수로 이차방정식을 계산한다."""
+        result = self.equation_controller.solve(a_text, b_text, c_text)
+        self._display_equation_result(result)
+
+    def _display_equation_result(
+        self,
+        result: EquationDisplayResult,
+    ) -> None:
+        """EquationController 결과를 성공 또는 오류 화면으로 전달한다."""
+        if not result.is_success:
+            self.calculator_widget.set_equation_error(result.error_message)
+            return
+
+        self.calculator_widget.set_equation_solution(
+            result.classification,
+            result.discriminant_text,
+            result.root_lines,
+        )
