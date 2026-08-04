@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from core.calculator_engine import CalculatorEngine
 from core.calculator_errors import CalculatorError
+from core.calculator_state import CalculatorState
 from core.result_formatter import ResultFormatter
 
 
@@ -17,15 +18,16 @@ class CalculationResult:
 
 
 class CalculatorController:
-    """계산 실행, 결과 포맷, 오류 문구 변환을 한곳에서 조정한다."""
+    """계산 실행, 상태 갱신, 결과 포맷, 오류 변환을 조정한다."""
 
     def __init__(
         self,
+        state: CalculatorState | None = None,
         engine: CalculatorEngine | None = None,
         formatter: ResultFormatter | None = None,
     ) -> None:
-        # 외부 객체를 받을 수 있게 해두면 테스트에서 대체 객체를 넣기 쉽다.
-        self._engine = engine or CalculatorEngine()
+        self.state = state or CalculatorState()
+        self._engine = engine or CalculatorEngine(self.state)
         self._formatter = formatter or ResultFormatter()
 
     def calculate(self, expression: str) -> CalculationResult:
@@ -38,6 +40,9 @@ class CalculatorController:
                 display_text=str(error),
                 is_success=False,
             )
+
+        # 다음 단계의 Ans 기능에서 사용할 수 있도록 최근 성공 결과를 저장한다.
+        self.state.answer = numeric_value
 
         return CalculationResult(
             display_text=display_text,
