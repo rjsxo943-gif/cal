@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 import math
 
-from core.calculator_errors import CalculatorError
+from core.calculator_errors import CalculatorError, InvalidInputError
 from core.calculator_state import CalculatorState
 from core.quadratic_equation_solver import (
     QuadraticEquationSolver,
@@ -50,11 +50,10 @@ class EquationController:
             b = self._parse_coefficient(b_text)
             c = self._parse_coefficient(c_text)
             solution = self._solver.solve(a, b, c)
-        except (ValueError, CalculatorError) as error:
-            message = str(error) if str(error) else "Invalid input"
+        except CalculatorError as error:
             return EquationDisplayResult(
                 is_success=False,
-                error_message=message,
+                error_message=str(error),
             )
 
         self._last_solution = solution
@@ -71,11 +70,15 @@ class EquationController:
         """비어 있지 않은 유한 실수 계수를 읽는다."""
         stripped = text.strip()
         if not stripped:
-            raise ValueError("Invalid input")
+            raise InvalidInputError()
 
-        value = float(stripped)
+        try:
+            value = float(stripped)
+        except ValueError as error:
+            raise InvalidInputError() from error
+
         if not math.isfinite(value):
-            raise ValueError("Invalid input")
+            raise InvalidInputError()
         return value
 
     def _format_solution(
