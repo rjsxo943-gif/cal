@@ -1,0 +1,72 @@
+"""프로그램의 최상위 창과 좌우 패널을 관리한다."""
+
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QMainWindow, QSplitter
+
+from gui.calculator_widget import CalculatorWidget
+from gui.history_panel import HistoryPanel
+
+
+class MainWindow(QMainWindow):
+    """계산기 본체와 계산 기록 패널을 담는 최상위 창."""
+
+    def __init__(self) -> None:
+        super().__init__()
+
+        # 창 전체 수준의 설정만 MainWindow에서 담당한다.
+        self.setWindowTitle("Scientific Calculator")
+        self.resize(1050, 720)
+        self.setMinimumSize(780, 600)
+
+        self._build_ui()
+        self._connect_signals()
+
+    def _build_ui(self) -> None:
+        """왼쪽 계산기와 오른쪽 기록 패널을 배치한다."""
+        self.calculator_widget = CalculatorWidget()
+        self.history_panel = HistoryPanel()
+
+        # QSplitter를 사용하면 사용자가 경계선을 드래그해
+        # 계산기 영역과 기록 패널의 너비를 조절할 수 있다.
+        self.main_splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.main_splitter.addWidget(self.calculator_widget)
+        self.main_splitter.addWidget(self.history_panel)
+
+        # 계산기 본체가 기록 패널보다 더 많이 확장되도록 설정한다.
+        self.main_splitter.setStretchFactor(0, 4)
+        self.main_splitter.setStretchFactor(1, 1)
+        self.main_splitter.setCollapsible(0, False)
+        self.main_splitter.setSizes([800, 250])
+
+        self.setCentralWidget(self.main_splitter)
+
+    def _connect_signals(self) -> None:
+        """하위 위젯의 요청을 창 수준 동작과 연결한다."""
+        self.calculator_widget.history_toggle_requested.connect(
+            self._toggle_history_panel
+        )
+        self.calculator_widget.calculate_requested.connect(
+            self._handle_calculate_request
+        )
+        self.history_panel.expression_selected.connect(
+            self.calculator_widget.set_expression
+        )
+
+    def _toggle_history_panel(self) -> None:
+        """HISTORY 버튼으로 오른쪽 패널을 열거나 닫는다."""
+        if self.history_panel.isVisible():
+            self.history_panel.hide()
+        else:
+            self.history_panel.show()
+            self.main_splitter.setSizes([800, 250])
+
+    def _handle_calculate_request(self, expression: str) -> None:
+        """
+        Phase 1의 임시 계산 요청 처리 함수다.
+
+        실제 계산은 Phase 2에서 CalculatorController와
+        CalculatorEngine을 연결한 뒤 이 함수에서 제거한다.
+        """
+        result = "ENGINE NOT CONNECTED"
+        self.calculator_widget.set_result(result)
+        self.history_panel.add_entry(expression, result)
