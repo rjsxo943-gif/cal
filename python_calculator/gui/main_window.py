@@ -4,6 +4,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMainWindow, QSplitter
 
 from core.calculator_controller import CalculatorController
+from core.complex_controller import ComplexController, ComplexDisplayResult
 from core.equation_controller import EquationController, EquationDisplayResult
 from core.statistics_controller import (
     StatisticsController,
@@ -22,9 +23,10 @@ class MainWindow(QMainWindow):
         self.calculator_controller = CalculatorController()
         shared_state = self.calculator_controller.state
 
-        # 세 모드는 같은 표시 상태를 공유하므로 FMT 변경이 동시에 적용된다.
+        # 모든 모드는 동일한 각도·표시 상태를 공유한다.
         self.statistics_controller = StatisticsController(shared_state)
         self.equation_controller = EquationController(shared_state)
+        self.complex_controller = ComplexController(shared_state)
 
         self.setWindowTitle("Scientific Calculator")
         self.resize(1050, 720)
@@ -64,6 +66,12 @@ class MainWindow(QMainWindow):
         widget.quadratic_solve_requested.connect(
             self._handle_quadratic_solve_request
         )
+        widget.complex_rectangular_requested.connect(
+            self._handle_complex_rectangular_request
+        )
+        widget.complex_polar_requested.connect(
+            self._handle_complex_polar_request
+        )
         widget.angle_mode_requested.connect(self._cycle_angle_mode)
         widget.display_mode_requested.connect(self._cycle_display_mode)
         widget.fraction_toggle_requested.connect(
@@ -90,6 +98,10 @@ class MainWindow(QMainWindow):
         angle_mode = self.calculator_controller.cycle_angle_mode()
         self.calculator_widget.set_angle_mode(angle_mode.value)
 
+        complex_result = self.complex_controller.redisplay_last_result()
+        if complex_result is not None:
+            self._display_complex_result(complex_result)
+
     def _cycle_display_mode(self) -> None:
         self.calculator_controller.cycle_display_mode()
         state = self.calculator_controller.state
@@ -106,6 +118,10 @@ class MainWindow(QMainWindow):
         equation_result = self.equation_controller.redisplay_last_solution()
         if equation_result is not None:
             self._display_equation_result(equation_result)
+
+        complex_result = self.complex_controller.redisplay_last_result()
+        if complex_result is not None:
+            self._display_complex_result(complex_result)
 
     def _toggle_fraction_display(self) -> None:
         calculation = self.calculator_controller.toggle_fraction_display()
@@ -176,4 +192,44 @@ class MainWindow(QMainWindow):
             result.classification,
             result.discriminant_text,
             result.root_lines,
+        )
+
+    def _handle_complex_rectangular_request(
+        self,
+        real_text: str,
+        imaginary_text: str,
+    ) -> None:
+        self._display_complex_result(
+            self.complex_controller.from_rectangular(
+                real_text,
+                imaginary_text,
+            )
+        )
+
+    def _handle_complex_polar_request(
+        self,
+        magnitude_text: str,
+        phase_text: str,
+    ) -> None:
+        self._display_complex_result(
+            self.complex_controller.from_polar(
+                magnitude_text,
+                phase_text,
+            )
+        )
+
+    def _display_complex_result(
+        self,
+        result: ComplexDisplayResult,
+    ) -> None:
+        if not result.is_success:
+            self.calculator_widget.set_complex_error(result.error_message)
+            return
+
+        self.calculator_widget.set_complex_result(
+            result.rectangular_text,
+            result.polar_text,
+            result.magnitude_text,
+            result.phase_text,
+            result.conjugate_text,
         )
