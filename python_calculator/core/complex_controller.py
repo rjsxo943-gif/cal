@@ -48,7 +48,7 @@ class ComplexController:
                 self._parse_real(real_text),
                 self._parse_real(imaginary_text),
             )
-        except (ValueError, CalculatorError) as error:
+        except CalculatorError as error:
             return self._error(error)
 
         self._last_summary = summary
@@ -66,7 +66,7 @@ class ComplexController:
                 self._parse_real(phase_text),
                 self.state.angle_mode,
             )
-        except (ValueError, CalculatorError) as error:
+        except CalculatorError as error:
             return self._error(error)
 
         self._last_summary = summary
@@ -85,7 +85,11 @@ class ComplexController:
         if not stripped:
             raise InvalidInputError()
 
-        value = float(stripped)
+        try:
+            value = float(stripped)
+        except ValueError as error:
+            raise InvalidInputError() from error
+
         if not math.isfinite(value):
             raise InvalidInputError()
         return value
