@@ -56,7 +56,6 @@ class CalculatorWidget(QWidget):
         self.control_panel = ControlPanel()
 
         # QStackedWidget은 여러 모드 화면 중 하나만 표시한다.
-        # 모든 기능을 한 화면에 동시에 노출하지 않기 위해 사용한다.
         self.mode_stack = QStackedWidget()
         self.mode_stack.addWidget(self._create_calculate_page())
         self.mode_stack.addWidget(self._create_placeholder_page("Statistics Mode"))
@@ -106,8 +105,8 @@ class CalculatorWidget(QWidget):
         layout = QGridLayout(page)
         layout.setSpacing(7)
 
-        # 튜플의 첫 값은 버튼 표기, 두 번째 값은 입력창에 넣을 문자열이다.
-        # 화면에는 ÷, ×를 보여주지만 파서 입력은 /, *로 통일한다.
+        # 한 인자 함수는 abs(값), recip(값)처럼 사용한다.
+        # 두 인자 함수는 ncr(5,2), gcd(12,18)처럼 쉼표로 구분한다.
         buttons: list[tuple[str, str | None]] = [
             ("sin", "sin("),
             ("cos", "cos("),
@@ -119,43 +118,54 @@ class CalculatorWidget(QWidget):
             ("√", "sqrt("),
             ("π", "pi"),
             ("e", "e"),
+            ("abs", "abs("),
+            ("1/x", "recip("),
+            ("x!", "!"),
+            ("nPr", "npr("),
+            ("nCr", "ncr("),
+            ("mod", "mod("),
+            ("GCD", "gcd("),
+            ("LCM", "lcm("),
+            (",", ","),
+            ("(", "("),
             ("7", "7"),
             ("8", "8"),
             ("9", "9"),
             ("÷", "/"),
-            ("(", "("),
+            (")", ")"),
             ("4", "4"),
             ("5", "5"),
             ("6", "6"),
             ("×", "*"),
-            (")", ")"),
+            ("Ans", "Ans"),
             ("1", "1"),
             ("2", "2"),
             ("3", "3"),
             ("-", "-"),
-            ("Ans", "Ans"),
+            ("EXP", "E"),
             ("0", "0"),
             (".", "."),
-            ("EXP", "E"),
             ("+", "+"),
             ("=", None),
         ]
 
         for index, (label, inserted_text) in enumerate(buttons):
-            # divmod(index, 5)는 5열 그리드의 행과 열을 동시에 계산한다.
             row, column = divmod(index, 5)
             button = QPushButton(label)
 
             if label == "=":
                 button.setObjectName("equalsButton")
                 button.clicked.connect(self._request_calculation)
-            else:
-                # 반복문 안의 값을 각 버튼에 고정하기 위해
-                # 별도의 handler 생성 함수를 사용한다.
-                button.clicked.connect(
-                    self._make_insert_handler(label, inserted_text or "")
-                )
 
+                # 마지막 행의 남은 두 칸을 '=' 버튼 하나가 사용한다.
+                layout.addWidget(button, row, column, 1, 2)
+                continue
+
+            # 반복문 안의 값을 각 버튼에 고정하기 위해
+            # 별도의 handler 생성 함수를 사용한다.
+            button.clicked.connect(
+                self._make_insert_handler(label, inserted_text or "")
+            )
             layout.addWidget(button, row, column)
 
         return page
@@ -216,7 +226,6 @@ class CalculatorWidget(QWidget):
             action = QAction(text, self)
 
             # page_index=index 기본 인자를 사용해 반복문 현재 값을 고정한다.
-            # 이를 생략하면 모든 메뉴가 마지막 index만 참조할 수 있다.
             action.triggered.connect(
                 lambda checked=False, page_index=index: self._set_mode(page_index)
             )
