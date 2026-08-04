@@ -16,12 +16,14 @@ from PySide6.QtWidgets import (
 
 from gui.control_panel import ControlPanel
 from gui.display_panel import DisplayPanel
+from gui.equation_page import EquationPage
 
 
 class CalculatorWidget(QWidget):
     """디스플레이, 공통 제어부, 모드별 입력 화면을 조립한다."""
 
     calculate_requested = Signal(str)
+    quadratic_solve_requested = Signal(str, str, str)
     history_toggle_requested = Signal()
     angle_mode_requested = Signal()
     display_mode_requested = Signal()
@@ -74,7 +76,10 @@ class CalculatorWidget(QWidget):
         self.mode_stack = QStackedWidget()
         self.mode_stack.addWidget(self._create_calculate_page())
         self.mode_stack.addWidget(self._create_placeholder_page("Statistics Mode"))
-        self.mode_stack.addWidget(self._create_placeholder_page("Equation Mode"))
+
+        self.equation_page = EquationPage()
+        self.mode_stack.addWidget(self.equation_page)
+
         self.mode_stack.addWidget(self._create_placeholder_page("Complex Mode"))
 
         self.mode_menu = self._create_mode_menu()
@@ -103,7 +108,7 @@ class CalculatorWidget(QWidget):
         control.delete_requested.connect(
             self.display_panel.delete_previous_character
         )
-        control.clear_requested.connect(self.display_panel.clear)
+        control.clear_requested.connect(self._handle_clear_request)
         control.history_toggle_requested.connect(
             self.history_toggle_requested.emit
         )
@@ -113,6 +118,9 @@ class CalculatorWidget(QWidget):
 
         self.display_panel.expression_edit.returnPressed.connect(
             self._request_calculation
+        )
+        self.equation_page.solve_requested.connect(
+            self.quadratic_solve_requested.emit
         )
 
     def _create_calculate_page(self) -> QWidget:
@@ -249,7 +257,11 @@ class CalculatorWidget(QWidget):
         """선택한 모드 페이지와 상단 상태 표시를 함께 변경한다."""
         self.mode_stack.setCurrentIndex(page_index)
         self.display_panel.set_mode_name(self.MODE_NAMES[page_index])
-        self.display_panel.expression_edit.setFocus()
+
+        if page_index == 2:
+            self.equation_page.focus_first_coefficient()
+        else:
+            self.display_panel.expression_edit.setFocus()
 
     def _toggle_shift(self) -> None:
         """SHIFT 활성 상태를 반전한다."""
@@ -271,6 +283,13 @@ class CalculatorWidget(QWidget):
             button.style().unpolish(button)
             button.style().polish(button)
 
+    def _handle_clear_request(self) -> None:
+        """현재 선택된 모드에 맞는 입력과 결과를 초기화한다."""
+        if self.mode_stack.currentIndex() == 2:
+            self.equation_page.clear()
+        else:
+            self.display_panel.clear()
+
     def _request_calculation(self) -> None:
         """현재 수식을 계산 요청 Signal로 전달한다."""
         expression = self.display_panel.expression().strip()
@@ -282,7 +301,7 @@ class CalculatorWidget(QWidget):
         self.calculate_requested.emit(expression)
 
     def set_result(self, text: str) -> None:
-        """Controller가 전달한 결과를 표시한다."""
+        """Controller가 전달한 일반 계산 결과를 표시한다."""
         self.display_panel.set_result(text)
 
     def set_expression(self, expression: str) -> None:
@@ -300,3 +319,20 @@ class CalculatorWidget(QWidget):
         """Controller의 결과 표시 모드를 디스플레이에 반영한다."""
         self.display_panel.set_display_mode(display_mode_name)
         self.display_panel.expression_edit.setFocus()
+
+    def set_equation_solution(
+        self,
+        classification: str,
+        discriminant_text: str,
+        root_lines: tuple[str, ...],
+    ) -> None:
+        """EquationController의 정상 결과를 EquationPage에 표시한다."""
+        self.equation_page.set_solution(
+            classification,
+            discriminant_text,
+            root_lines,
+        )
+
+    def set_equation_error(self, message: str) -> None:
+        """EquationController의 오류를 EquationPage에 표시한다."""
+        self.equation_page.set_error(message)
