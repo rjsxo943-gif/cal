@@ -7,9 +7,10 @@ from core.calculator_errors import InvalidInputError, SyntaxCalculatorError
 
 
 class TokenType(Enum):
-    """Phase 2 기본 수식에서 사용하는 토큰의 종류."""
+    """기본 연산과 공학 함수에서 사용하는 토큰의 종류."""
 
     NUMBER = auto()
+    IDENTIFIER = auto()
     PLUS = auto()
     MINUS = auto()
     MULTIPLY = auto()
@@ -25,7 +26,7 @@ class Token:
     """수식에서 분리한 하나의 의미 단위."""
 
     token_type: TokenType
-    value: float | None = None
+    value: float | str | None = None
     position: int = 0
 
 
@@ -55,7 +56,6 @@ class Tokenizer:
         while index < len(expression):
             character = expression[index]
 
-            # 공백은 계산 의미가 없으므로 건너뛴다.
             if character.isspace():
                 index += 1
                 continue
@@ -65,21 +65,46 @@ class Tokenizer:
                 tokens.append(token)
                 continue
 
+            if character == "π":
+                tokens.append(
+                    Token(
+                        token_type=TokenType.IDENTIFIER,
+                        value="pi",
+                        position=index,
+                    )
+                )
+                index += 1
+                continue
+
+            if character.isalpha() or character == "_":
+                token, index = self._read_identifier(expression, index)
+                tokens.append(token)
+                continue
+
+            if character == "√":
+                tokens.append(
+                    Token(
+                        token_type=TokenType.IDENTIFIER,
+                        value="sqrt",
+                        position=index,
+                    )
+                )
+                index += 1
+                continue
+
             token_type = self._SINGLE_CHARACTER_TOKENS.get(character)
             if token_type is None:
-                # 알파벳 함수와 상수는 Phase 3에서 추가한다.
                 raise InvalidInputError()
 
             tokens.append(Token(token_type=token_type, position=index))
             index += 1
 
-        # END는 Parser가 수식을 남김없이 읽었는지 확인할 때 사용한다.
         tokens.append(Token(token_type=TokenType.END, position=len(expression)))
         return tokens
 
     @staticmethod
     def _read_number(expression: str, start: int) -> tuple[Token, int]:
-        """start 위치부터 하나의 정수 또는 소수를 읽는다."""
+        """start 위치부터 정수, 소수 또는 지수 표기 숫자를 읽는다."""
         index = start
         decimal_point_count = 0
         digit_count = 0
@@ -101,9 +126,23 @@ class Tokenizer:
 
             break
 
-        # "."만 입력한 경우는 숫자가 아니다.
         if digit_count == 0:
             raise SyntaxCalculatorError()
+
+        # 1E3, 2.5e-4와 같은 과학적 표기법을 하나의 NUMBER로 읽는다.
+        if index < len(expression) and expression[index] in ("e", "E"):
+            index += 1
+
+            if index < len(expression) and expression[index] in ("+", "-"):
+                index += 1
+
+            exponent_start = index
+            while index < len(expression) and expression[index].isdigit():
+                index += 1
+
+            if exponent_start == index:
+                # 2e처럼 지수 숫자가 없는 입력은 완전한 숫자가 아니다.
+                raise SyntaxCalculatorError()
 
         number_text = expression[start:index]
 
@@ -116,6 +155,28 @@ class Tokenizer:
             Token(
                 token_type=TokenType.NUMBER,
                 value=value,
+                position=start,
+            ),
+            index,
+        )
+
+    @staticmethod
+    def _read_identifier(expression: str, start: int) -> tuple[Token, int]:
+        """함수명이나 상수명을 하나의 IDENTIFIER 토큰으로 읽는다."""
+        index = start
+
+        while index < len(expression):
+            character = expression[index]
+            if not (character.isalpha() or character == "_"):
+                break
+            index += 1
+
+        identifier = expression[start:index].lower()
+
+        return (
+            Token(
+                token_type=TokenType.IDENTIFIER,
+                value=identifier,
                 position=start,
             ),
             index,
