@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from gui.complex_page import ComplexPage
 from gui.control_panel import ControlPanel
 from gui.display_panel import DisplayPanel
 from gui.equation_page import EquationPage
@@ -28,6 +29,8 @@ class CalculatorWidget(QWidget):
     statistics_remove_requested = Signal(int)
     statistics_clear_requested = Signal()
     quadratic_solve_requested = Signal(str, str, str)
+    complex_rectangular_requested = Signal(str, str)
+    complex_polar_requested = Signal(str, str)
     history_toggle_requested = Signal()
     angle_mode_requested = Signal()
     display_mode_requested = Signal()
@@ -83,7 +86,9 @@ class CalculatorWidget(QWidget):
         self.equation_page = EquationPage()
         self.mode_stack.addWidget(self.equation_page)
 
-        self.mode_stack.addWidget(self._create_placeholder_page("Complex Mode"))
+        self.complex_page = ComplexPage()
+        self.mode_stack.addWidget(self.complex_page)
+
         self.mode_menu = self._create_mode_menu()
 
         layout.addWidget(self.display_panel)
@@ -129,6 +134,12 @@ class CalculatorWidget(QWidget):
         )
         self.equation_page.solve_requested.connect(
             self.quadratic_solve_requested.emit
+        )
+        self.complex_page.rectangular_requested.connect(
+            self.complex_rectangular_requested.emit
+        )
+        self.complex_page.polar_requested.connect(
+            self.complex_polar_requested.emit
         )
 
     def _create_calculate_page(self) -> QWidget:
@@ -188,17 +199,6 @@ class CalculatorWidget(QWidget):
 
         return handler
 
-    @staticmethod
-    def _create_placeholder_page(title: str) -> QWidget:
-        page = QWidget()
-        layout = QVBoxLayout(page)
-        label = QLabel(f"{title}\nUI will be added in a later phase")
-        label.setStyleSheet("font-size: 20px; color: #6b7280;")
-        layout.addStretch()
-        layout.addWidget(label)
-        layout.addStretch()
-        return page
-
     def _create_mode_menu(self) -> QMenu:
         menu = QMenu(self)
         for text, index in (
@@ -226,6 +226,8 @@ class CalculatorWidget(QWidget):
             self.statistics_page.focus_input()
         elif page_index == 2:
             self.equation_page.focus_first_coefficient()
+        elif page_index == 3:
+            self.complex_page.focus_rectangular_input()
         else:
             self.display_panel.expression_edit.setFocus()
 
@@ -253,6 +255,8 @@ class CalculatorWidget(QWidget):
             self.statistics_clear_requested.emit()
         elif current_mode == 2:
             self.equation_page.clear()
+        elif current_mode == 3:
+            self.complex_page.clear()
         else:
             self.display_panel.clear()
 
@@ -273,6 +277,7 @@ class CalculatorWidget(QWidget):
 
     def set_angle_mode(self, angle_mode_name: str) -> None:
         self.display_panel.set_angle_mode(angle_mode_name)
+        self.complex_page.set_angle_mode(angle_mode_name)
 
     def set_display_mode(self, display_mode_name: str) -> None:
         self.display_panel.set_display_mode(display_mode_name)
@@ -304,3 +309,22 @@ class CalculatorWidget(QWidget):
 
     def set_equation_error(self, message: str) -> None:
         self.equation_page.set_error(message)
+
+    def set_complex_result(
+        self,
+        rectangular_text: str,
+        polar_text: str,
+        magnitude_text: str,
+        phase_text: str,
+        conjugate_text: str,
+    ) -> None:
+        self.complex_page.set_result(
+            rectangular_text,
+            polar_text,
+            magnitude_text,
+            phase_text,
+            conjugate_text,
+        )
+
+    def set_complex_error(self, message: str) -> None:
+        self.complex_page.set_error(message)
