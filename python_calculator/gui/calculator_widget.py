@@ -21,12 +21,10 @@ from gui.display_panel import DisplayPanel
 class CalculatorWidget(QWidget):
     """디스플레이, 공통 제어부, 모드별 입력 화면을 조립한다."""
 
-    # 계산과 상태 변경 요청을 MainWindow에 전달한다.
     calculate_requested = Signal(str)
     history_toggle_requested = Signal()
     angle_mode_requested = Signal()
 
-    # QStackedWidget의 페이지 번호와 화면 표시 이름을 연결한다.
     MODE_NAMES = {
         0: "CALC",
         1: "STAT",
@@ -37,13 +35,11 @@ class CalculatorWidget(QWidget):
     def __init__(self) -> None:
         super().__init__()
 
-        # SHIFT는 한 번 사용할 때까지 유지되는 계산기 상태다.
+        # SHIFT는 보조 기능을 한 번 사용할 때까지 유지한다.
         self.shift_active = False
 
         self._build_ui()
         self._connect_signals()
-
-        # 실행 직후 바로 키보드로 수식을 입력할 수 있게 한다.
         self.display_panel.expression_edit.setFocus()
 
     def _build_ui(self) -> None:
@@ -55,7 +51,7 @@ class CalculatorWidget(QWidget):
         self.display_panel = DisplayPanel()
         self.control_panel = ControlPanel()
 
-        # QStackedWidget은 여러 모드 화면 중 하나만 표시한다.
+        # 각 계산 모드는 별도 페이지로 유지한다.
         self.mode_stack = QStackedWidget()
         self.mode_stack.addWidget(self._create_calculate_page())
         self.mode_stack.addWidget(self._create_placeholder_page("Statistics Mode"))
@@ -89,12 +85,10 @@ class CalculatorWidget(QWidget):
             self.history_toggle_requested.emit
         )
 
-        # 위/아래 계산 기록 탐색은 기록 데이터 모델을 구현하는
-        # 후속 단계에서 실제 동작과 연결한다.
+        # 위/아래 기록 탐색은 기록 모델 확장 단계에서 연결한다.
         control.history_up_requested.connect(lambda: None)
         control.history_down_requested.connect(lambda: None)
 
-        # 입력창에서 Enter를 누르면 '=' 버튼과 같은 요청을 발생시킨다.
         self.display_panel.expression_edit.returnPressed.connect(
             self._request_calculation
         )
@@ -105,8 +99,8 @@ class CalculatorWidget(QWidget):
         layout = QGridLayout(page)
         layout.setSpacing(7)
 
-        # 한 인자 함수는 abs(값), recip(값)처럼 사용한다.
-        # 두 인자 함수는 ncr(5,2), gcd(12,18)처럼 쉼표로 구분한다.
+        # 두 인자 함수는 quot(10,3), root(3,8)처럼 쉼표로 구분한다.
+        # Ran#은 인자가 없으므로 완성된 random() 문자열을 삽입한다.
         buttons: list[tuple[str, str | None]] = [
             ("sin", "sin("),
             ("cos", "cos("),
@@ -128,6 +122,11 @@ class CalculatorWidget(QWidget):
             ("LCM", "lcm("),
             (",", ","),
             ("(", "("),
+            ("quot", "quot("),
+            ("rem", "rem("),
+            ("%", "%"),
+            ("root", "root("),
+            ("Ran#", "random()"),
             ("7", "7"),
             ("8", "8"),
             ("9", "9"),
@@ -157,12 +156,10 @@ class CalculatorWidget(QWidget):
                 button.setObjectName("equalsButton")
                 button.clicked.connect(self._request_calculation)
 
-                # 마지막 행의 남은 두 칸을 '=' 버튼 하나가 사용한다.
+                # 마지막 행에서 '=' 버튼이 두 칸을 사용한다.
                 layout.addWidget(button, row, column, 1, 2)
                 continue
 
-            # 반복문 안의 값을 각 버튼에 고정하기 위해
-            # 별도의 handler 생성 함수를 사용한다.
             button.clicked.connect(
                 self._make_insert_handler(label, inserted_text or "")
             )
@@ -178,19 +175,17 @@ class CalculatorWidget(QWidget):
         """각 입력 버튼이 눌렸을 때 실행할 함수를 만들어 반환한다."""
 
         def handler() -> None:
-            # SHIFT가 켜졌을 때 지원되는 보조 기능이다.
             shift_text = {
                 "sin": "asin(",
                 "cos": "acos(",
                 "tan": "atan(",
                 "log": "10^(",
                 "ln": "e^(",
+                "Ran#": "randint(",
             }.get(button_label)
 
             if self.shift_active and shift_text is not None:
                 self.display_panel.insert_text(shift_text)
-
-                # 카시오 계산기처럼 보조 기능을 한 번 사용하면 해제한다.
                 self._set_shift_active(False)
             else:
                 self.display_panel.insert_text(normal_text)
@@ -199,11 +194,11 @@ class CalculatorWidget(QWidget):
 
     @staticmethod
     def _create_placeholder_page(title: str) -> QWidget:
-        """후속 Phase에서 구현할 모드의 임시 화면을 만든다."""
+        """후속 단계에서 구현할 모드의 임시 화면을 만든다."""
         page = QWidget()
         layout = QVBoxLayout(page)
 
-        label = QLabel(f"{title}\nUI will be added in Phase 5")
+        label = QLabel(f"{title}\nUI will be added in a later phase")
         label.setStyleSheet("font-size: 20px; color: #6b7280;")
 
         layout.addStretch()
@@ -224,8 +219,6 @@ class CalculatorWidget(QWidget):
 
         for text, index in mode_items:
             action = QAction(text, self)
-
-            # page_index=index 기본 인자를 사용해 반복문 현재 값을 고정한다.
             action.triggered.connect(
                 lambda checked=False, page_index=index: self._set_mode(page_index)
             )
@@ -266,7 +259,7 @@ class CalculatorWidget(QWidget):
         self.calculate_requested.emit(expression)
 
     def set_result(self, text: str) -> None:
-        """MainWindow 또는 Controller가 전달한 결과를 표시한다."""
+        """Controller가 전달한 결과를 표시한다."""
         self.display_panel.set_result(text)
 
     def set_expression(self, expression: str) -> None:
