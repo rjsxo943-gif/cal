@@ -4,60 +4,116 @@
 
 ```text
 Python PySide6 계산기          완료
-C++ 콘솔 계산기 1.0           완료
-C++ Qt 시제품                  제거
-C++ 자동 테스트               94개 통과
-Python/C++ 비교 도구           추가
+C++ 계산 엔진                 완료
+C++ CLI 1.0                   완료
+C++ Win32 버튼형 GUI          구현 완료
+Visual Studio 솔루션          추가 완료
+C++ 계산 엔진 테스트         94개 통과
+Windows/MSVC GUI 실기동       사용자 환경 확인 대기
 ```
 
-## C++ 1.0
+## C++ 최신 방향
 
-`cpp_calculator/`는 Qt 없이 Visual Studio와 CMake로 빌드되는 C++17 콘솔 공학용 계산기다.
+C++ 기본 실행 화면은 콘솔이 아니라 **순수 Win32 API 버튼형 GUI**다.
 
-완료 기능:
+```text
+cpp_calculator\ScientificCalculator.sln
+```
 
-- 사용자 정의 Tokenizer 및 재귀 하강 Parser
-- 사칙연산, 괄호, 단항 부호, 오른쪽 결합 거듭제곱
-- 팩토리얼, 퍼센트, 과학적 표기 숫자
-- 삼각함수·역삼각함수·로그·제곱근
-- 순열·조합·정수 함수·n제곱근·난수
-- pi, e, Ans
+CMake를 설치하지 않아도 위 솔루션을 Visual Studio에서 직접 열 수 있다.
+
+솔루션 프로젝트:
+
+```text
+ScientificCalculator   C++17 Win32 버튼형 공학용 계산기
+CalculatorTests        계산 엔진 자동 테스트
+```
+
+기존 CLI는 삭제하지 않고 선택 실행 대상으로 유지했다.
+
+## GUI 완료 기능
+
+### CALC
+
+- 수식 입력창과 결과 표시창
+- 48개 계산·상태·편집 버튼
+- 숫자, 사칙연산, 괄호, 거듭제곱
+- 삼각함수, 역삼각함수, 로그, 제곱근
+- 순열·조합, GCD·LCM, 몫·나머지
+- 팩토리얼, 퍼센트, 절댓값, 역수
+- `pi`, `e`, `Ans`, 난수
+- SHIFT 라벨·입력 전환
 - DEG / RAD / GRAD
-- NORM / FIX4 / SCI4 / S⇔D
-- 계산 기록
-- 1변수 통계
-- 이차방정식
-- 복소수 직교형·극형 변환
-- 대화형 메뉴와 `--eval` 실행 모드
-- 공통 오류 메시지
+- NORM / FIX4 / SCI4
+- S⇔D
+- 왼쪽·오른쪽 커서, DEL, AC
+- Enter 계산, Esc 초기화
+- 계산 기록과 더블클릭 수식 복원
+
+### STAT
+
+- 여러 데이터 입력
+- 추가, 선택 삭제, 전체 삭제
+- 개수, 합, 평균, 최솟값, 최댓값
+- 모집단·표본 분산과 표준편차
+
+### EQN
+
+- 이차방정식 `ax² + bx + c = 0`
+- 서로 다른 실근, 중근, 복소근
+
+### CMPLX
+
+- 직교형·극형 입력
+- 복소수, 켤레복소수, 크기, 위상
+- DEG / RAD / GRAD 상태 연동
+
+## Architecture
+
+```text
+Win32 GUI / optional CLI
+          ↓
+CalculatorController / mode controllers
+          ↓
+CalculatorState
+          ↓
+Tokenizer → ExpressionParser → CalculatorEngine
+          ↓
+ResultFormatter / CalculationHistory
+```
+
+GUI는 기존 계산 엔진을 재사용하며 수식을 직접 해석하지 않는다.
+
+## Build without CMake
+
+```text
+1. cpp_calculator\ScientificCalculator.sln 열기
+2. Debug / x64 선택
+3. ScientificCalculator를 시작 프로젝트로 설정
+4. Ctrl+F5 또는 F5
+```
+
+필요한 Visual Studio 구성:
+
+```text
+C++를 사용한 데스크톱 개발
+Windows 10 또는 Windows 11 SDK
+MSVC x64/x86 빌드 도구
+```
+
+Qt와 CMake는 Visual Studio 솔루션 빌드에 필요하지 않다.
 
 ## Validation
 
-개발 환경에서 다음을 확인했다.
+기존 계산 엔진은 이전 개발 환경에서 다음 검증을 통과했다.
 
 ```text
-CMake configure 성공
-C++17 strict warning build 성공
-CTest 100% 통과
-Passed: 94, Failed: 0
-대화형 메뉴 수동 입력 확인
---eval 수식 실행 확인
+Passed: 94
+Failed: 0
 ```
 
-GitHub Actions 워크플로는 아직 없으므로 위 결과는 개발 환경에서 수행한 로컬 검증 결과다.
-
-## Build
-
-```powershell
-cd C:\Users\user\cal\cpp_calculator
-cmake -S . -B build
-cmake --build build --config Debug
-ctest --test-dir build -C Debug --output-on-failure
-.\build\Debug\scientific_calculator.exe
-```
-
-단일 구성 생성기에서는 실행 파일 경로가 `build/scientific_calculator.exe`일 수 있다.
+Win32 GUI 코드는 Windows 전용 헤더와 MSVC가 없는 현재 작업 환경에서 작성했기 때문에 실제 Windows 컴파일·실행 여부는 사용자의 Visual Studio에서 최종 확인해야 한다. 오류가 발견되면 해당 MSVC 오류 메시지를 기준으로 수정한다.
 
 ## Resume instruction
 
-C++ 콘솔 1.0은 완료 상태다. 다음 작업은 사용자의 Visual Studio 빌드 결과를 확인하고 발견되는 Windows/MSVC 호환 문제를 수정하는 것이다.
+다음 작업은 사용자가 `ScientificCalculator.sln`을 빌드한 결과를 확인하고 Windows/MSVC 호환 오류 또는 GUI 배치 문제를 수정하는 것이다.
