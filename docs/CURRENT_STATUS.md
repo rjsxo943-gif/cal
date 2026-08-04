@@ -1,92 +1,63 @@
 # Scientific Calculator Current Status
 
-> 이 문서는 프로젝트의 최신 진행 상태를 빠르게 복원하기 위한 체크포인트다.
-
 ## Current phase
 
 ```text
-Python 기본 계산 엔진       완료
-Python 공학 함수            완료
-Python 상태·표시 기능       완료
-Python 이차방정식 모드      완료
-Python 1변수 통계 모드      완료
-Python 복소수 모드          완료
-Python GUI                  완료
-C++ Qt GUI 시제품           폐기 예정
-C++ 콘솔 완성 계획서       완료
-C++ 콘솔 Phase 0           다음 작업
+Python PySide6 계산기          완료
+C++ 콘솔 계산기 1.0           완료
+C++ Qt 시제품                  제거
+C++ 자동 테스트               94개 통과
+Python/C++ 비교 도구           추가
 ```
 
-## 최신 방향 변경
+## C++ 1.0
 
-기존에는 C++ 버전을 Qt Widgets GUI로 구현할 계획이었지만, 최신 사용자 결정에 따라 C++ 버전은 Visual Studio 콘솔 프로그램으로 변경한다.
+`cpp_calculator/`는 Qt 없이 Visual Studio와 CMake로 빌드되는 C++17 콘솔 공학용 계산기다.
+
+완료 기능:
+
+- 사용자 정의 Tokenizer 및 재귀 하강 Parser
+- 사칙연산, 괄호, 단항 부호, 오른쪽 결합 거듭제곱
+- 팩토리얼, 퍼센트, 과학적 표기 숫자
+- 삼각함수·역삼각함수·로그·제곱근
+- 순열·조합·정수 함수·n제곱근·난수
+- pi, e, Ans
+- DEG / RAD / GRAD
+- NORM / FIX4 / SCI4 / S⇔D
+- 계산 기록
+- 1변수 통계
+- 이차방정식
+- 복소수 직교형·극형 변환
+- 대화형 메뉴와 `--eval` 실행 모드
+- 공통 오류 메시지
+
+## Validation
+
+개발 환경에서 다음을 확인했다.
 
 ```text
-Python → PySide6 GUI 기준 구현
-C++    → Qt 없는 Visual Studio 콘솔 구현
+CMake configure 성공
+C++17 strict warning build 성공
+CTest 100% 통과
+Passed: 94, Failed: 0
+대화형 메뉴 수동 입력 확인
+--eval 수식 실행 확인
 ```
 
-Qt 설치와 Qt 의존성은 더 이상 필요하지 않다.
+GitHub Actions 워크플로는 아직 없으므로 위 결과는 개발 환경에서 수행한 로컬 검증 결과다.
 
-현재 저장소의 C++ Qt 코드는 초기 시제품이며 다음 Phase에서 활성 빌드와 작업 트리에서 제거한다. 필요한 상태 로직만 콘솔 프로젝트로 옮긴다.
+## Build
 
-## 기준 문서
-
-C++ 구현의 전체 범위, 구조, 테스트, 커밋 순서, 완료 조건은 다음 문서에 고정했다.
-
-```text
-docs/CPP_CONSOLE_CALCULATOR_MASTER_PLAN.md
+```powershell
+cd C:\Users\user\cal\cpp_calculator
+cmake -S . -B build
+cmake --build build --config Debug
+ctest --test-dir build -C Debug --output-on-failure
+.\build\Debug\scientific_calculator.exe
 ```
 
-이 문서는 다음을 포함한다.
-
-- Python 완성본과 맞출 기능 범위
-- C++ 1.0 제외 범위
-- 재귀 하강 Parser 문법
-- 콘솔 메뉴와 명령
-- 최종 폴더 구조
-- 단위·통합·Python/C++ 동등성 테스트
-- Phase 0~9 구현 순서
-- 최종 완료 체크리스트
-
-## Python implementation status
-
-Python 버전은 C++의 계산 동작 기준으로 사용한다.
-
-```text
-CALC  기본·공학 계산
-STAT  1변수 통계
-EQN   이차방정식
-CMPLX 복소수 직교형·극형 변환
-```
-
-현재 확인된 Python 전체 테스트 기준은 `174 passed`다.
-
-## Next task — C++ Phase 0
-
-Qt 프로젝트를 외부 의존성 없는 콘솔 프로젝트로 전환한다.
-
-작업 순서:
-
-1. CMake에서 Qt 탐색·링크 제거
-2. `main.cpp`를 콘솔 진입점으로 교체
-3. `CalculatorState` 재사용·정리
-4. 메인 콘솔 메뉴 뼈대 구현
-5. Qt GUI 파일 삭제
-6. Visual Studio/MSVC 빌드 확인
-7. CTest 상태 테스트 확인
-8. C++ README를 콘솔 기준으로 수정
-
-완료 조건:
-
-```text
-Qt가 없는 환경에서 configure 성공
-C++ 프로그램 빌드 성공
-메인 메뉴 출력
-정상 종료
-CalculatorState 테스트 통과
-```
+단일 구성 생성기에서는 실행 파일 경로가 `build/scientific_calculator.exe`일 수 있다.
 
 ## Resume instruction
 
-새 대화에서 이 파일을 읽은 AI는 다음 작업을 `CPP_CONSOLE_CALCULATOR_MASTER_PLAN.md의 Phase 0 구현`으로 판단한다.
+C++ 콘솔 1.0은 완료 상태다. 다음 작업은 사용자의 Visual Studio 빌드 결과를 확인하고 발견되는 Windows/MSVC 호환 문제를 수정하는 것이다.

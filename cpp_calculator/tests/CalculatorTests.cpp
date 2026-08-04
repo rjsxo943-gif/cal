@@ -1,0 +1,5 @@
+#include "split/Tests_00.inc"
+#include "split/Tests_01.inc"
+#include "split/Tests_02A.inc"
+#include "split/Tests_02B.inc"
+#include "split/Tests_03.inc"

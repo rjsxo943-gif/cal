@@ -1,12 +1,8 @@
-#include "gui/MainWindow.h"
-
-#include <QApplication>
-
-int main(int argc, char* argv[]) {
-    QApplication application(argc, argv);
-
-    calculator::gui::MainWindow window;
-    window.show();
-
-    return application.exec();
-}
+#include "main_parts/Main_00.inc"
+#include "main_parts/Main_01.inc"
+#include "main_parts/Main_02.inc"
+#include "main_parts/Main_03.inc"
+#include "main_parts/Main_04.inc"
+#include "main_parts/Main_05A.inc"
+#include "main_parts/Main_05B.inc"
+#include "main_parts/Main_07.inc"
