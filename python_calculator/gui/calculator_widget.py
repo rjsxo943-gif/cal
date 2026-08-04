@@ -21,10 +21,10 @@ from gui.display_panel import DisplayPanel
 class CalculatorWidget(QWidget):
     """디스플레이, 공통 제어부, 모드별 입력 화면을 조립한다."""
 
-    # 계산 엔진은 아직 연결하지 않는다.
-    # 사용자가 '=' 또는 Enter를 누르면 수식만 MainWindow로 전달한다.
+    # 계산과 상태 변경 요청을 MainWindow에 전달한다.
     calculate_requested = Signal(str)
     history_toggle_requested = Signal()
+    angle_mode_requested = Signal()
 
     # QStackedWidget의 페이지 번호와 화면 표시 이름을 연결한다.
     MODE_NAMES = {
@@ -75,6 +75,7 @@ class CalculatorWidget(QWidget):
 
         control.shift_requested.connect(self._toggle_shift)
         control.mode_requested.connect(self._show_mode_menu)
+        control.angle_mode_requested.connect(self.angle_mode_requested.emit)
         control.cursor_left_requested.connect(
             lambda: self.display_panel.move_cursor(-1)
         )
@@ -90,7 +91,7 @@ class CalculatorWidget(QWidget):
         )
 
         # 위/아래 계산 기록 탐색은 기록 데이터 모델을 구현하는
-        # Phase 4에서 실제 동작과 연결한다.
+        # 후속 단계에서 실제 동작과 연결한다.
         control.history_up_requested.connect(lambda: None)
         control.history_down_requested.connect(lambda: None)
 
@@ -246,7 +247,7 @@ class CalculatorWidget(QWidget):
         self.control_panel.set_shift_active(active)
 
     def _request_calculation(self) -> None:
-        """현재 수식을 실제 계산 대신 외부 Signal로 전달한다."""
+        """현재 수식을 계산 요청 Signal로 전달한다."""
         expression = self.display_panel.expression().strip()
 
         if not expression:
@@ -263,4 +264,9 @@ class CalculatorWidget(QWidget):
         """계산 기록에서 선택한 수식을 입력창으로 복원한다."""
         self.display_panel.expression_edit.setText(expression)
         self.display_panel.expression_edit.setCursorPosition(len(expression))
+        self.display_panel.expression_edit.setFocus()
+
+    def set_angle_mode(self, angle_mode_name: str) -> None:
+        """Controller의 각도 모드 상태를 디스플레이에 반영한다."""
+        self.display_panel.set_angle_mode(angle_mode_name)
         self.display_panel.expression_edit.setFocus()
