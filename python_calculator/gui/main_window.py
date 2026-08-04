@@ -14,7 +14,7 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
 
-        # GUI가 계산 규칙을 직접 알지 않도록 Controller를 별도로 둔다.
+        # GUI와 계산 엔진은 이 Controller가 가진 CalculatorState를 공유한다.
         self.calculator_controller = CalculatorController()
 
         # 창 전체 수준의 설정만 MainWindow에서 담당한다.
@@ -24,6 +24,7 @@ class MainWindow(QMainWindow):
 
         self._build_ui()
         self._connect_signals()
+        self._synchronize_state_display()
 
     def _build_ui(self) -> None:
         """왼쪽 계산기와 오른쪽 기록 패널을 배치한다."""
@@ -52,8 +53,17 @@ class MainWindow(QMainWindow):
         self.calculator_widget.calculate_requested.connect(
             self._handle_calculate_request
         )
+        self.calculator_widget.angle_mode_requested.connect(
+            self._cycle_angle_mode
+        )
         self.history_panel.expression_selected.connect(
             self.calculator_widget.set_expression
+        )
+
+    def _synchronize_state_display(self) -> None:
+        """프로그램 시작 시 Controller 상태를 GUI 상태 표시와 맞춘다."""
+        self.calculator_widget.set_angle_mode(
+            self.calculator_controller.state.angle_mode.value
         )
 
     def _toggle_history_panel(self) -> None:
@@ -63,6 +73,11 @@ class MainWindow(QMainWindow):
         else:
             self.history_panel.show()
             self.main_splitter.setSizes([800, 250])
+
+    def _cycle_angle_mode(self) -> None:
+        """DRG 요청을 처리하고 변경된 각도 모드를 화면에 표시한다."""
+        angle_mode = self.calculator_controller.cycle_angle_mode()
+        self.calculator_widget.set_angle_mode(angle_mode.value)
 
     def _handle_calculate_request(self, expression: str) -> None:
         """Controller에 계산을 요청하고 결과와 기록을 갱신한다."""
