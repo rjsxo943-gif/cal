@@ -1,4 +1,4 @@
-"""Phase 2 기본 계산 엔진의 공통 동작을 검증한다."""
+"""기본 계산 엔진의 공통 동작을 검증한다."""
 
 import pytest
 
@@ -14,7 +14,6 @@ from core.result_formatter import ResultFormatter
 
 @pytest.fixture
 def engine() -> CalculatorEngine:
-    """각 테스트에서 독립적으로 사용할 계산 엔진을 만든다."""
     return CalculatorEngine()
 
 
@@ -32,6 +31,8 @@ def engine() -> CalculatorEngine:
         ("2^-2", 0.25),
         ("10/4", 2.5),
         (" 12.5 + 3 * (4 - 1) ", 21.5),
+        ("1E3", 1000.0),
+        ("2.5e-3", 0.0025),
     ],
 )
 def test_basic_expressions(
@@ -48,7 +49,7 @@ def test_syntax_errors(engine: CalculatorEngine, expression: str) -> None:
         engine.evaluate(expression)
 
 
-@pytest.mark.parametrize("expression", ["2+a", "sin(30)", ""])
+@pytest.mark.parametrize("expression", ["2+a", "unknown(3)", ""])
 def test_invalid_inputs(engine: CalculatorEngine, expression: str) -> None:
     with pytest.raises(InvalidInputError):
         engine.evaluate(expression)
