@@ -17,6 +17,7 @@ class TokenType(Enum):
     DIVIDE = auto()
     POWER = auto()
     FACTORIAL = auto()
+    PERCENT = auto()
     COMMA = auto()
     LEFT_PAREN = auto()
     RIGHT_PAREN = auto()
@@ -44,6 +45,7 @@ class Tokenizer:
         "÷": TokenType.DIVIDE,
         "^": TokenType.POWER,
         "!": TokenType.FACTORIAL,
+        "%": TokenType.PERCENT,
         ",": TokenType.COMMA,
         "(": TokenType.LEFT_PAREN,
         ")": TokenType.RIGHT_PAREN,
@@ -145,7 +147,6 @@ class Tokenizer:
                 index += 1
 
             if exponent_start == index:
-                # 2e처럼 지수 숫자가 없는 입력은 완전한 숫자가 아니다.
                 raise SyntaxCalculatorError()
 
         number_text = expression[start:index]
